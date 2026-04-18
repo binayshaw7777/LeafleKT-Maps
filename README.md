@@ -221,7 +221,15 @@ LeafleKT now follows the same high-level usage model as Google Maps Compose:
 - callbacks are declarative and recomposition-safe
 - imperative controller calls remain available for markers and escape-hatch actions
 
-The implementation is original to this project. It mirrors the usage pattern, not Google source code.
+## Acknowledgments & Licensing
+
+- **Leaflet.js:** This library is a wrapper around [Leaflet.js](https://leafletjs.com/), which is licensed under the [BSD 2-Clause License](https://github.com/Leaflet/Leaflet/blob/master/LICENSE).
+- **Map Data:** This library does not provide map tiles. You are responsible for complying with the terms of service and attribution requirements of your chosen tile provider (e.g., [OpenStreetMap](https://www.openstreetmap.org/copyright)).
+- **India Boundaries:** The optional India boundary overlay uses data derived from OpenStreetMap contributors.
+
+## License
+
+LeafleKT is licensed under the [Apache License 2.0](LICENSE).
 
 ## How it works
 
