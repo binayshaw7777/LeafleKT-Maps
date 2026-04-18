@@ -43,12 +43,12 @@
             case "carto_light":
                 return {
                     borderColor: "#dbdbdb",
-                    claimedOpacity: 0.8,
+                    claimedOpacity: 1,
                 };
             case "open_street_map":
             default:
                 return {
-                    borderColor: "#ac46ac",
+                    borderColor: "#A07B9E",
                     claimedOpacity: 0.6,
                 };
         }
