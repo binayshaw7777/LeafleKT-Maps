@@ -6,9 +6,7 @@ plugins {
 
 android {
     namespace = "com.binayshaw7777.leaflekt"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.binayshaw7777.leaflekt"

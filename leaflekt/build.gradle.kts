@@ -19,9 +19,7 @@ val pomScmDeveloperConnection = providers.gradleProperty("POM_SCM_DEV_CONNECTION
 
 android {
     namespace = "com.binayshaw7777.leaflekt.library"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
