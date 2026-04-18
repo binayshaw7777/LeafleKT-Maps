@@ -2,6 +2,8 @@
 
 LeafleKT is a Compose-first Android wrapper around Leaflet.js. It renders a real Leaflet map inside `WebView`, exposes a stable state-driven Kotlin API, and keeps the runtime self-contained by bundling Leaflet assets locally.
 
+[![JitPack](https://jitpack.io/v/binayshaw7777/LeafleKT.svg)](https://jitpack.io/#binayshaw7777/LeafleKT)
+
 ## What it gives you
 
 - Compose API for embedding a Leaflet map with `LeafletMap`
@@ -37,23 +39,28 @@ Current scope is intentionally small and stable:
 
 ## Install
 
+JitPack:
+
+```kotlin
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://jitpack.io")
+    }
+}
+
+dependencies {
+    implementation("com.github.binayshaw7777.LeafleKT:leaflekt:<version>")
+}
+```
+
 Local project usage:
 
 ```kotlin
 dependencies {
     implementation(project(":leaflekt"))
-}
-```
-
-Planned JitPack usage:
-
-```kotlin
-repositories {
-    maven("https://jitpack.io")
-}
-
-dependencies {
-    implementation("com.github.<your-user-or-org>:LeafleKT:<version>")
 }
 ```
 
@@ -297,6 +304,12 @@ Run unit tests:
 ./gradlew :leaflekt:testDebugUnitTest
 ```
 
+Verify release publishing locally:
+
+```bash
+./gradlew :leaflekt:publishReleasePublicationToMavenLocal
+```
+
 Gradle build caching is enabled in `gradle.properties`.
 
 ## Project structure
@@ -313,3 +326,21 @@ app/
 ## Attribution
 
 Leaflet and tile-provider attribution is part of the product contract. Do not remove or hide attribution from the active tile layer.
+
+## Release Flow
+
+Release versioning is driven by the root `VERSION` file.
+
+Maintainer flow:
+
+1. bump `VERSION`
+2. push to `master`
+3. let GitHub Actions verify the build, create tag `v<version>`, create the GitHub Release, upload the release AAR asset, and warm the JitPack build URL
+
+Release checklist:
+
+- `docs/RELEASE_CHECKLIST.md`
+
+Security policy:
+
+- `SECURITY.md`

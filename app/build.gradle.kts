@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val releaseVersion = rootProject.file("VERSION").readText().trim()
+
 android {
     namespace = "com.binayshaw7777.leaflekt"
     compileSdk {
@@ -15,7 +17,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = releaseVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

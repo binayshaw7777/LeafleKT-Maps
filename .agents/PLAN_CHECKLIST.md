@@ -10,7 +10,7 @@
 ### Phase 0 - Repo Setup
 - [x] Repo name is `LeafleKT`
 - [ ] Public GitHub repo
-- [ ] Default branch `main`
+- [ ] Default branch `master`
 - [x] Add `README.md`
 
 ### Phase 1 - Android Library Setup
@@ -97,6 +97,9 @@
 - [x] Public API KDocs added
 
 ### Phase 12 - Deployment
+- [x] JitPack-ready `maven-publish` configuration
+- [x] JitPack Java runtime pinned with `jitpack.yml`
+- [x] Release automation workflow added for `master`
 - [ ] Push code
 - [ ] Create tag `v0.1.0`
 - [ ] Verify JitPack build
