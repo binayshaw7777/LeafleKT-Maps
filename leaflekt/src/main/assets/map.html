@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeafleKT Map</title>
+    <link rel="stylesheet" href="/assets/leaflet/leaflet.css" />
+    <style>
+        html,
+        body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #map {
+            position: fixed;
+            inset: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="/assets/leaflet/leaflet.js"></script>
+<script>
+    (function () {
+        const DEFAULT_LAT = 22.5726;
+        const DEFAULT_LNG = 88.3639;
+        const DEFAULT_ZOOM = 12;
+        const bridgeName = "LeafletAndroidBridge";
+
+        let map = null;
+        const markers = [];
+
+        function logDebug(message) {
+            console.log("[LeafleKT] " + message);
+        }
+
+        window.addEventListener("error", function (event) {
+            console.error("[LeafleKT] window error: " + event.message + " @" + event.filename + ":" + event.lineno);
+        });
+
+        logDebug("boot href=" + window.location.href);
+
+        function getAndroidBridge() {
+            return window[bridgeName];
+        }
+
+        function notifyMapReady() {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onMapReady === "function") {
+                androidBridge.onMapReady();
+            }
+        }
+
+        function notifyMapClick(lat, lng) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onMapClick === "function") {
+                androidBridge.onMapClick(lat, lng);
+            }
+        }
+
+        function notifyMarkerClick(markerId) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onMarkerClick === "function") {
+                androidBridge.onMarkerClick(markerId);
+            }
+        }
+
+        function showLoadError(message) {
+            console.error("[LeafleKT] " + message);
+            const mapContainer = document.getElementById("map");
+            mapContainer.innerHTML = "<div style='padding:16px;font-family:sans-serif;color:#b00020'>" + message + "</div>";
+        }
+
+        function createMap(lat, lng, zoom) {
+            const mapContainer = document.getElementById("map");
+            logDebug("createMap width=" + mapContainer.clientWidth + " height=" + mapContainer.clientHeight);
+            map = L.map("map", { zoomControl: true }).setView([lat, lng], zoom);
+
+            const tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
+
+            tileLayer.on("loading", function () {
+                logDebug("tile loading");
+            });
+            tileLayer.on("load", function () {
+                logDebug("tile load complete");
+            });
+            tileLayer.on("tileerror", function (event) {
+                console.error("[LeafleKT] tileerror src=" + (event.tile && event.tile.src ? event.tile.src : "unknown"));
+            });
+
+            tileLayer.addTo(map);
+
+            map.on("click", function (event) {
+                notifyMapClick(event.latlng.lat, event.latlng.lng);
+            });
+
+            map.on("load", function () {
+                logDebug("map load event fired");
+            });
+
+            retryInvalidateSize(20);
+
+            notifyMapReady();
+            return map;
+        }
+
+        function retryInvalidateSize(remainingAttempts) {
+            if (map === null) {
+                return;
+            }
+
+            const mapContainer = document.getElementById("map");
+            logDebug(
+                "invalidateSize remaining=" + remainingAttempts +
+                " width=" + mapContainer.clientWidth +
+                " height=" + mapContainer.clientHeight
+            );
+            map.invalidateSize();
+
+            if (remainingAttempts <= 0) {
+                return;
+            }
+
+            setTimeout(function () {
+                retryInvalidateSize(remainingAttempts - 1);
+            }, 150);
+        }
+
+        function ensureMap(lat, lng, zoom) {
+            if (map !== null) {
+                return map;
+            }
+            return createMap(lat, lng, zoom);
+        }
+
+        function nextMarkerId() {
+            return "marker-" + Date.now() + "-" + Math.floor(Math.random() * 100000);
+        }
+
+        function addMarkerLayer(marker) {
+            const activeMap = ensureMap(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
+            const markerId = marker.id || nextMarkerId();
+            const markerLayer = L.marker([marker.lat, marker.lng]).addTo(activeMap);
+
+            if (marker.title) {
+                markerLayer.bindPopup(marker.title);
+            }
+
+            markerLayer.on("click", function () {
+                notifyMarkerClick(markerId);
+            });
+
+            markers.push(markerLayer);
+            return markerId;
+        }
+
+        window.LeafletBridge = {
+            initMap: function (lat, lng, zoom) {
+                ensureMap(lat, lng, zoom);
+            },
+            addMarker: function (lat, lng, title) {
+                addMarkerLayer({ lat: lat, lng: lng, title: title || null });
+            },
+            addMarkers: function (list) {
+                if (!Array.isArray(list) || list.length === 0) {
+                    return;
+                }
+
+                ensureMap(list[0].lat, list[0].lng, DEFAULT_ZOOM);
+                list.forEach(function (item) {
+                    addMarkerLayer({
+                        id: item.id || null,
+                        lat: Number(item.lat),
+                        lng: Number(item.lng),
+                        title: item.title || null
+                    });
+                });
+            },
+            moveCamera: function (lat, lng, zoom) {
+                const activeMap = ensureMap(lat, lng, zoom);
+                activeMap.setView([lat, lng], zoom);
+            },
+            clearMarkers: function () {
+                if (map === null) {
+                    return;
+                }
+                markers.forEach(function (markerLayer) {
+                    map.removeLayer(markerLayer);
+                });
+                markers.length = 0;
+            }
+        };
+
+        if (typeof L === "undefined") {
+            showLoadError("Leaflet local assets failed to load.");
+            return;
+        }
+
+        logDebug("Leaflet object available");
+
+        window.addEventListener("resize", function () {
+            if (map !== null) {
+                logDebug("window resize invalidateSize");
+                map.invalidateSize();
+            }
+        });
+
+        ensureMap(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
+    })();
+</script>
+</body>
+</html>

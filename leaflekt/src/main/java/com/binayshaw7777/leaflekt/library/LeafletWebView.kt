@@ -1,0 +1,123 @@
+package com.binayshaw7777.leaflekt.library
+
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.webkit.WebViewAssetLoader
+
+@Composable
+internal fun LeafletWebView(
+    modifier: Modifier,
+    controller: LeafletController,
+    jsBridge: LeafletJsBridge
+) {
+    val webViewState = remember { mutableStateOf<WebView?>(null) }
+
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            val assetLoader = WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
+                .build()
+
+            WebView.setWebContentsDebuggingEnabled(true)
+            WebView(context).apply {
+                Log.d(TAG, "create WebView")
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.allowFileAccess = true
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                webChromeClient = object : WebChromeClient() {
+                    override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                        Log.d(
+                            TAG,
+                            "JS ${consoleMessage.messageLevel()}: ${consoleMessage.message()} " +
+                                "(${consoleMessage.sourceId()}:${consoleMessage.lineNumber()})"
+                        )
+                        return super.onConsoleMessage(consoleMessage)
+                    }
+                }
+                webViewClient = object : WebViewClient() {
+                    override fun shouldInterceptRequest(
+                        view: WebView?,
+                        request: WebResourceRequest?
+                    ): WebResourceResponse? {
+                        val safeRequest = request ?: return null
+                        Log.d(TAG, "intercept ${safeRequest.method} ${safeRequest.url}")
+                        return assetLoader.shouldInterceptRequest(safeRequest.url)
+                            ?: super.shouldInterceptRequest(view, safeRequest)
+                    }
+
+                    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                        Log.d(TAG, "pageStarted url=$url")
+                        super.onPageStarted(view, url, favicon)
+                    }
+
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        Log.d(
+                            TAG,
+                            "pageFinished url=$url width=${view?.width} height=${view?.height} " +
+                                "contentHeight=${view?.contentHeight}"
+                        )
+                        view?.evaluateJavascript(
+                            "(function(){var map=document.getElementById('map');" +
+                                "return JSON.stringify({" +
+                                "LType:typeof L," +
+                                "bridgeType:typeof window.LeafletBridge," +
+                                "bodyReady:document.readyState," +
+                                "mapWidth:map?map.clientWidth:-1," +
+                                "mapHeight:map?map.clientHeight:-1," +
+                                "bodyHtmlClass:document.body.className" +
+                                "});})();"
+                        ) { value ->
+                            Log.d(TAG, "Page finished diagnostics: $value")
+                        }
+                    }
+
+                    override fun onReceivedError(
+                        view: WebView?,
+                        request: WebResourceRequest?,
+                        error: WebResourceError?
+                    ) {
+                        Log.e(TAG, "Web resource error: ${request?.url} - ${error?.description}")
+                        super.onReceivedError(view, request, error)
+                    }
+                }
+                addJavascriptInterface(jsBridge, JS_BRIDGE_NAME)
+                loadUrl(MAP_ASSET_URL)
+                controller.attachWebView(this)
+                webViewState.value = this
+            }
+        },
+        update = { webView ->
+            controller.attachWebView(webView)
+            webViewState.value = webView
+        }
+    )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            val webView = webViewState.value ?: return@onDispose
+            controller.detachWebView(webView)
+            webView.removeJavascriptInterface(JS_BRIDGE_NAME)
+            webView.stopLoading()
+            webView.destroy()
+            webViewState.value = null
+        }
+    }
+}
+
+private const val TAG = "LeafleKT.WebView"

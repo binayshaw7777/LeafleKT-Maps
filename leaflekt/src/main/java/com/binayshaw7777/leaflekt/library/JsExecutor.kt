@@ -1,0 +1,23 @@
+package com.binayshaw7777.leaflekt.library
+
+import android.util.Log
+import android.webkit.WebView
+
+internal class JsExecutor(
+    private val webViewProvider: () -> WebView?
+) {
+    fun runJS(script: String) {
+        val webView = webViewProvider.invoke() ?: return
+        webView.post {
+            runCatching {
+                webView.evaluateJavascript(script, null)
+            }.onFailure { error ->
+                Log.e(TAG, "Leaflet JS execution failed", error)
+            }
+        }
+    }
+
+    private companion object {
+        const val TAG = "LeafleKT.JsExecutor"
+    }
+}
