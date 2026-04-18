@@ -34,13 +34,6 @@ class LeafletController internal constructor() {
     }
 
     /**
-     * Shows or hides the bundled India boundary overlay.
-     */
-    fun setIndiaBoundaryOverlayVisible(isVisible: Boolean) {
-        enqueueOrRun(LeafletScriptBuilder.setIndiaBoundaryOverlayVisibleScript(isVisible))
-    }
-
-    /**
      * Adds a single marker to the map.
      */
     fun addMarker(marker: Marker) {
@@ -69,15 +62,11 @@ class LeafletController internal constructor() {
         initialLng: Double,
         initialZoom: Double,
         isZoomControlEnabled: Boolean,
-        initialMapStyle: LeafletMapStyle,
-        isIndiaBoundaryOverlayVisible: Boolean
+        initialMapStyle: LeafletMapStyle
     ) {
         enqueueOrRun(LeafletScriptBuilder.initMapScript(initialLat, initialLng, initialZoom))
         enqueueOrRun(LeafletScriptBuilder.setZoomControlsEnabledScript(isZoomControlEnabled))
         enqueueOrRun(LeafletScriptBuilder.setMapStyleScript(initialMapStyle))
-        enqueueOrRun(
-            LeafletScriptBuilder.setIndiaBoundaryOverlayVisibleScript(isIndiaBoundaryOverlayVisible)
-        )
     }
 
     internal fun attachWebView(webView: WebView) {

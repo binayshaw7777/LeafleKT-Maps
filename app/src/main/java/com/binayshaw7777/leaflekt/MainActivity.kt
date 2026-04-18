@@ -18,7 +18,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -34,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.binayshaw7777.leaflekt.library.LeafletCameraPosition
 import com.binayshaw7777.leaflekt.library.LeafletCameraPositionState
 import com.binayshaw7777.leaflekt.library.LeafletController
@@ -67,7 +67,6 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
     var activeMarkerLat by rememberSaveable { mutableDoubleStateOf(22.5726) }
     var activeMarkerLng by rememberSaveable { mutableDoubleStateOf(88.3639) }
     var selectedMapStyle by rememberSaveable { mutableStateOf(LeafletMapStyle.OpenStreetMap) }
-    var isIndiaBoundaryOverlayVisible by rememberSaveable { mutableStateOf(true) }
     var isStyleMenuExpanded by remember { mutableStateOf(false) }
     var lastTap by rememberSaveable { mutableStateOf("Tap on map to capture coordinates") }
     var lastMarkerId by rememberSaveable { mutableStateOf("No marker clicked yet") }
@@ -77,11 +76,8 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             zoom = 12.0
         )
     )
-    val mapProperties = LeafletMapProperties(
-        mapStyle = selectedMapStyle,
-        isIndiaBoundaryOverlayVisible = isIndiaBoundaryOverlayVisible
-    )
-    val mapUiSettings = LeafletMapUiSettings(isZoomControlEnabled = true)
+    val mapProperties = LeafletMapProperties(mapStyle = selectedMapStyle)
+    val mapUiSettings = LeafletMapUiSettings(isZoomControlEnabled = false)
 
     Column(
         modifier = modifier.padding(12.dp),
@@ -128,23 +124,6 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "India boundary overlay",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Switch(
-                checked = isIndiaBoundaryOverlayVisible,
-                onCheckedChange = { isVisible ->
-                    isIndiaBoundaryOverlayVisible = isVisible
-                }
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
@@ -158,7 +137,7 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                     )
                 }
             ) {
-                Text("Kolkata")
+                Text("Kolkata", fontSize = 14.sp)
             }
             Button(
                 modifier = Modifier.weight(1f),
@@ -171,7 +150,7 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                     )
                 }
             ) {
-                Text("Bengaluru")
+                Text(text = "Bengaluru", fontSize = 14.sp)
             }
             Button(
                 modifier = Modifier.weight(1f),

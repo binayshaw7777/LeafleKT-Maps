@@ -7,7 +7,7 @@ LeafleKT is a Compose-first Android wrapper around Leaflet.js. It renders a real
 - Compose API for embedding a Leaflet map with `LeafletMap`
 - State-driven API modeled after Google Maps Compose patterns
 - Controller API for markers and imperative escape hatches
-- Optional India boundary overlay rendered from bundled GeoJSON linework
+- India boundary overlay rendered from bundled GeoJSON linework
 - JavaScript bridge for map tap and marker tap callbacks
 - Local Leaflet runtime assets bundled inside the library module
 - Demo app with runtime controls for zoom, markers, and map style switching
@@ -33,7 +33,7 @@ Current scope is intentionally small and stable:
 - map click callback
 - marker click callback
 - built-in tile style switching
-- optional India boundary overlay toggle
+- always-on India boundary overlay
 
 ## Install
 
@@ -82,8 +82,7 @@ fun MapScreen() {
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
         properties = LeafletMapProperties(
-            mapStyle = LeafletMapStyle.OpenStreetMap,
-            isIndiaBoundaryOverlayVisible = true
+            mapStyle = LeafletMapStyle.OpenStreetMap
         ),
         onMapClick = { point ->
             // handle map tap
@@ -149,8 +148,7 @@ Map properties and UI settings:
 
 ```kotlin
 LeafletMapProperties(
-    mapStyle = LeafletMapStyle.CartoDark,
-    isIndiaBoundaryOverlayVisible = true
+    mapStyle = LeafletMapStyle.CartoDark
 )
 
 LeafletMapUiSettings(
@@ -164,7 +162,6 @@ Controller methods:
 controller.setCenter(lat, lng, zoom)
 controller.setZoomControlsEnabled(true)
 controller.setMapStyle(LeafletMapStyle.CartoDark)
-controller.setIndiaBoundaryOverlayVisible(true)
 controller.addMarker(marker)
 controller.addMarkers(markers)
 controller.clearMarkers()
@@ -193,25 +190,27 @@ Each style keeps its own tile URL template, attribution text, and max zoom in th
 
 ## India boundary overlay
 
-The SDK now includes an optional India boundary overlay loaded from a dedicated asset script:
+The SDK includes an always-on India boundary overlay backed by:
 
 - `leaflekt/src/main/assets/leaflet/india-boundaries.js`
+- `leaflekt/src/main/assets/leaflet/india-country-outline.min.geojson`
 
 It is wired through the public Kotlin API:
 
 ```kotlin
 LeafletMap(
-    isIndiaBoundaryOverlayVisible = true
+    properties = LeafletMapProperties(
+        mapStyle = LeafletMapStyle.CartoDark
+    )
 )
-
-controller.setIndiaBoundaryOverlayVisible(false)
 ```
 
 Notes:
 
-- the overlay is optional and can be toggled at runtime
-- the data is isolated in one asset file so updates can be made in one place
-- the current script keeps separate `claimed` and `disputed` segments in styling metadata
+- the overlay is always enabled by the SDK
+- the GeoJSON is kept as a dedicated runtime asset, not inlined in `map.html`
+- the overlay data is fetched once, cached, and reused
+- the border palette reacts to the active map style so it stays visible on light, dark, topo, and imagery themes
 
 ## API direction
 
@@ -261,7 +260,7 @@ Supported now:
 - [x] Map click callback
 - [x] Marker click callback
 - [x] Built-in tile style switching
-- [x] Optional India boundary overlay toggle
+- [x] Always-on India boundary overlay
 - [x] Camera state API
 - [x] Map properties API
 - [x] UI settings API
