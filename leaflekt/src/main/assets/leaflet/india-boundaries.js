@@ -27,61 +27,51 @@
         switch (styleId) {
             case "carto_dark":
                 return {
-                    borderColor: "#b9c2cc",
-                    disputedColor: "#d2a6a6",
-                    claimedOpacity: 0.62,
-                    disputedOpacity: 0.72
+                    borderColor: "#adb5bd",
+                    claimedOpacity: 0.45,
                 };
             case "esri_world_imagery":
                 return {
-                    borderColor: "#d9e2ea",
-                    disputedColor: "#e7c9a1",
-                    claimedOpacity: 0.68,
-                    disputedOpacity: 0.8
+                    borderColor: "#ffffff",
+                    claimedOpacity: 0.6,
                 };
             case "open_topo_map":
                 return {
-                    borderColor: "#8f8776",
-                    disputedColor: "#ad9079",
-                    claimedOpacity: 0.58,
-                    disputedOpacity: 0.7
+                    borderColor: "#6c757d",
+                    claimedOpacity: 0.4,
                 };
             case "carto_light":
-                return {
-                    borderColor: "#8a9099",
-                    disputedColor: "#b28b8b",
-                    claimedOpacity: 0.56,
-                    disputedOpacity: 0.68
-                };
             case "open_street_map":
             default:
                 return {
-                    borderColor: "#8d8f94",
-                    disputedColor: "#b38f8f",
-                    claimedOpacity: 0.52,
-                    disputedOpacity: 0.64
+                    borderColor: "#868e96",
+                    claimedOpacity: 0.45,
                 };
         }
     }
 
     function boundaryWeight(map) {
-        return Math.max(map.getZoom() / 7, 0.85);
+        const zoom = map.getZoom();
+        if (zoom < 6) return 0.8;
+        if (zoom < 10) return 1.2;
+        return 1.8;
     }
 
     function pathStyle(map, feature) {
         const palette = boundaryPalette(activeStyleId);
-        const isDisputed = feature &&
-            feature.properties &&
-            feature.properties.boundary === "disputed";
+        const zoom = map.getZoom();
+        
+        let opacity = palette.claimedOpacity;
+        if (zoom > 10) opacity *= 0.7; 
+        if (zoom > 14) opacity *= 0.5;
 
         return {
-            color: isDisputed ? palette.disputedColor : palette.borderColor,
-            weight: isDisputed ? boundaryWeight(map) * 1.15 : boundaryWeight(map),
-            opacity: isDisputed ? palette.disputedOpacity : palette.claimedOpacity,
+            color: palette.borderColor,
+            weight: boundaryWeight(map),
+            opacity: opacity,
             fill: false,
             interactive: false,
             bubblingMouseEvents: false,
-            dashArray: isDisputed ? "6 4" : null,
             lineCap: "round",
             lineJoin: "round"
         };
