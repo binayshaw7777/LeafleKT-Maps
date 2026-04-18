@@ -20,7 +20,8 @@ import androidx.webkit.WebViewAssetLoader
 internal fun LeafletWebView(
     modifier: Modifier,
     controller: LeafletController,
-    jsBridge: LeafletJsBridge
+    jsBridge: LeafletJsBridge,
+    contentDescription: String?
 ) {
     val webViewState = remember { mutableStateOf<WebView?>(null) }
 
@@ -33,7 +34,7 @@ internal fun LeafletWebView(
 
             WebView.setWebContentsDebuggingEnabled(true)
             WebView(context).apply {
-                Log.d(TAG, "create WebView")
+                this.contentDescription = contentDescription
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.allowFileAccess = true
@@ -41,11 +42,16 @@ internal fun LeafletWebView(
                 settings.useWideViewPort = true
                 webChromeClient = object : WebChromeClient() {
                     override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                        Log.d(
-                            TAG,
-                            "JS ${consoleMessage.messageLevel()}: ${consoleMessage.message()} " +
-                                "(${consoleMessage.sourceId()}:${consoleMessage.lineNumber()})"
-                        )
+                        if (
+                            consoleMessage.messageLevel() == ConsoleMessage.MessageLevel.ERROR ||
+                            consoleMessage.messageLevel() == ConsoleMessage.MessageLevel.WARNING
+                        ) {
+                            Log.w(
+                                TAG,
+                                "JS ${consoleMessage.messageLevel()}: ${consoleMessage.message()} " +
+                                    "(${consoleMessage.sourceId()}:${consoleMessage.lineNumber()})"
+                            )
+                        }
                         return super.onConsoleMessage(consoleMessage)
                     }
                 }
@@ -55,36 +61,12 @@ internal fun LeafletWebView(
                         request: WebResourceRequest?
                     ): WebResourceResponse? {
                         val safeRequest = request ?: return null
-                        Log.d(TAG, "intercept ${safeRequest.method} ${safeRequest.url}")
                         return assetLoader.shouldInterceptRequest(safeRequest.url)
                             ?: super.shouldInterceptRequest(view, safeRequest)
                     }
 
-                    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                        Log.d(TAG, "pageStarted url=$url")
-                        super.onPageStarted(view, url, favicon)
-                    }
-
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        Log.d(
-                            TAG,
-                            "pageFinished url=$url width=${view?.width} height=${view?.height} " +
-                                "contentHeight=${view?.contentHeight}"
-                        )
-                        view?.evaluateJavascript(
-                            "(function(){var map=document.getElementById('map');" +
-                                "return JSON.stringify({" +
-                                "LType:typeof L," +
-                                "bridgeType:typeof window.LeafletBridge," +
-                                "bodyReady:document.readyState," +
-                                "mapWidth:map?map.clientWidth:-1," +
-                                "mapHeight:map?map.clientHeight:-1," +
-                                "bodyHtmlClass:document.body.className" +
-                                "});})();"
-                        ) { value ->
-                            Log.d(TAG, "Page finished diagnostics: $value")
-                        }
                     }
 
                     override fun onReceivedError(
@@ -92,6 +74,10 @@ internal fun LeafletWebView(
                         request: WebResourceRequest?,
                         error: WebResourceError?
                     ) {
+                        val failedUrl = request?.url?.toString().orEmpty()
+                        if (failedUrl.endsWith("/favicon.ico")) {
+                            return
+                        }
                         Log.e(TAG, "Web resource error: ${request?.url} - ${error?.description}")
                         super.onReceivedError(view, request, error)
                     }
@@ -104,6 +90,7 @@ internal fun LeafletWebView(
         },
         update = { webView ->
             controller.attachWebView(webView)
+            webView.contentDescription = contentDescription
             webViewState.value = webView
         }
     )

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LeafleKT Map</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/assets/leaflet/leaflet.css" />
     <style>
         html,
@@ -24,25 +25,28 @@
 <body>
 <div id="map"></div>
 <script src="/assets/leaflet/leaflet.js"></script>
+<script src="/assets/leaflet/india-boundaries.js"></script>
 <script>
     (function () {
         const DEFAULT_LAT = 22.5726;
         const DEFAULT_LNG = 88.3639;
         const DEFAULT_ZOOM = 12;
         const bridgeName = "LeafletAndroidBridge";
+        const defaultMapStyle = {
+            id: "open_street_map",
+            tileUrlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            attributionHtml: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+            subdomains: null
+        };
 
         let map = null;
+        let activeTileLayer = null;
+        let activeZoomControl = null;
+        let activeMapStyle = defaultMapStyle;
+        let isIndiaBoundaryOverlayVisible = true;
+        let isZoomControlEnabled = true;
         const markers = [];
-
-        function logDebug(message) {
-            console.log("[LeafleKT] " + message);
-        }
-
-        window.addEventListener("error", function (event) {
-            console.error("[LeafleKT] window error: " + event.message + " @" + event.filename + ":" + event.lineno);
-        });
-
-        logDebug("boot href=" + window.location.href);
 
         function getAndroidBridge() {
             return window[bridgeName];
@@ -70,45 +74,41 @@
         }
 
         function showLoadError(message) {
-            console.error("[LeafleKT] " + message);
             const mapContainer = document.getElementById("map");
             mapContainer.innerHTML = "<div style='padding:16px;font-family:sans-serif;color:#b00020'>" + message + "</div>";
         }
 
         function createMap(lat, lng, zoom) {
-            const mapContainer = document.getElementById("map");
-            logDebug("createMap width=" + mapContainer.clientWidth + " height=" + mapContainer.clientHeight);
-            map = L.map("map", { zoomControl: true }).setView([lat, lng], zoom);
-
-            const tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            });
-
-            tileLayer.on("loading", function () {
-                logDebug("tile loading");
-            });
-            tileLayer.on("load", function () {
-                logDebug("tile load complete");
-            });
-            tileLayer.on("tileerror", function (event) {
-                console.error("[LeafleKT] tileerror src=" + (event.tile && event.tile.src ? event.tile.src : "unknown"));
-            });
-
-            tileLayer.addTo(map);
+            map = L.map("map", { zoomControl: false }).setView([lat, lng], zoom);
+            applyZoomControls();
+            replaceTileLayer(activeMapStyle);
 
             map.on("click", function (event) {
                 notifyMapClick(event.latlng.lat, event.latlng.lng);
             });
 
-            map.on("load", function () {
-                logDebug("map load event fired");
-            });
-
+            applyIndiaBoundaryOverlayVisibility();
             retryInvalidateSize(20);
 
             notifyMapReady();
             return map;
+        }
+
+        function applyZoomControls() {
+            if (map === null) {
+                return;
+            }
+
+            if (isZoomControlEnabled && activeZoomControl === null) {
+                activeZoomControl = L.control.zoom();
+                activeZoomControl.addTo(map);
+                return;
+            }
+
+            if (!isZoomControlEnabled && activeZoomControl !== null) {
+                map.removeControl(activeZoomControl);
+                activeZoomControl = null;
+            }
         }
 
         function retryInvalidateSize(remainingAttempts) {
@@ -116,12 +116,6 @@
                 return;
             }
 
-            const mapContainer = document.getElementById("map");
-            logDebug(
-                "invalidateSize remaining=" + remainingAttempts +
-                " width=" + mapContainer.clientWidth +
-                " height=" + mapContainer.clientHeight
-            );
             map.invalidateSize();
 
             if (remainingAttempts <= 0) {
@@ -138,6 +132,42 @@
                 return map;
             }
             return createMap(lat, lng, zoom);
+        }
+
+        function createTileLayer(style) {
+            const tileLayerOptions = {
+                maxZoom: style.maxZoom,
+                attribution: style.attributionHtml
+            };
+
+            if (style.subdomains) {
+                tileLayerOptions.subdomains = style.subdomains;
+            }
+
+            return L.tileLayer(style.tileUrlTemplate, tileLayerOptions);
+        }
+
+        function replaceTileLayer(style) {
+            activeMapStyle = style;
+
+            if (map === null) {
+                return;
+            }
+
+            if (activeTileLayer !== null) {
+                map.removeLayer(activeTileLayer);
+            }
+
+            activeTileLayer = createTileLayer(style);
+            activeTileLayer.addTo(map);
+        }
+
+        function applyIndiaBoundaryOverlayVisibility() {
+            if (map === null || typeof window.LeafleKTIndiaBoundaryOverlay === "undefined") {
+                return;
+            }
+
+            window.LeafleKTIndiaBoundaryOverlay.setVisible(map, isIndiaBoundaryOverlayVisible);
         }
 
         function nextMarkerId() {
@@ -164,6 +194,27 @@
         window.LeafletBridge = {
             initMap: function (lat, lng, zoom) {
                 ensureMap(lat, lng, zoom);
+            },
+            setZoomControlsEnabled: function (isEnabled) {
+                isZoomControlEnabled = Boolean(isEnabled);
+                applyZoomControls();
+            },
+            setMapStyle: function (style) {
+                if (!style || !style.tileUrlTemplate || !style.attributionHtml) {
+                    return;
+                }
+
+                replaceTileLayer({
+                    id: style.id || defaultMapStyle.id,
+                    tileUrlTemplate: style.tileUrlTemplate,
+                    attributionHtml: style.attributionHtml,
+                    maxZoom: Number(style.maxZoom || defaultMapStyle.maxZoom),
+                    subdomains: style.subdomains || null
+                });
+            },
+            setIndiaBoundaryOverlayVisible: function (isVisible) {
+                isIndiaBoundaryOverlayVisible = Boolean(isVisible);
+                applyIndiaBoundaryOverlayVisibility();
             },
             addMarker: function (lat, lng, title) {
                 addMarkerLayer({ lat: lat, lng: lng, title: title || null });
@@ -203,11 +254,8 @@
             return;
         }
 
-        logDebug("Leaflet object available");
-
         window.addEventListener("resize", function () {
             if (map !== null) {
-                logDebug("window resize invalidateSize");
                 map.invalidateSize();
             }
         });

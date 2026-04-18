@@ -16,4 +16,14 @@ class LeafletScriptBuilderTest {
         assertTrue(script.contains("\"lng\":20"))
         assertTrue(script.contains("\"title\":\"Point A\""))
     }
+
+    @Test
+    fun setMapStyleScriptContainsTileStyleMetadata() {
+        val script = LeafletScriptBuilder.setMapStyleScript(LeafletMapStyle.CartoDark)
+
+        assertTrue(script.contains("window.LeafletBridge.setMapStyle("))
+        assertTrue(script.contains("\"id\":\"carto_dark\""))
+        assertTrue(script.contains("dark_all"))
+        assertTrue(script.contains("\"maxZoom\":20"))
+    }
 }
