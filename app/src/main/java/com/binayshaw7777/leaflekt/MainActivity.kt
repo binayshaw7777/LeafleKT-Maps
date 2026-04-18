@@ -238,7 +238,7 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .weight(1f),
             cameraPositionState = cameraPositionState,
-            contentDescription = "LeafleKT demo map",
+            contentDescription = "LeafleKT demo map app",
             properties = mapProperties,
             uiSettings = mapUiSettings,
             onReady = { leafletController ->
