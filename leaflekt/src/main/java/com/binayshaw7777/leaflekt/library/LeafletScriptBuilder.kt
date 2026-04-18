@@ -5,6 +5,14 @@ internal object LeafletScriptBuilder {
         return "window.LeafletBridge.initMap($lat,$lng,$zoom);"
     }
 
+    fun setZoomControlsEnabledScript(isEnabled: Boolean): String {
+        return "window.LeafletBridge.setZoomControlsEnabled($isEnabled);"
+    }
+
+    fun setMapStyleScript(style: LeafletMapStyle): String {
+        return "window.LeafletBridge.setMapStyle(${style.toJson()});"
+    }
+
     fun moveCameraScript(lat: Double, lng: Double, zoom: Double): String {
         return "window.LeafletBridge.moveCamera($lat,$lng,$zoom);"
     }
@@ -24,6 +32,14 @@ internal object LeafletScriptBuilder {
         val encodedId = id.encodeJsonString()
         val encodedTitle = title?.encodeJsonString() ?: "null"
         return """{"id":$encodedId,"lat":$lat,"lng":$lng,"title":$encodedTitle}"""
+    }
+
+    private fun LeafletMapStyle.toJson(): String {
+        val encodedId = id.encodeJsonString()
+        val encodedTileUrl = tileUrlTemplate.encodeJsonString()
+        val encodedAttribution = attributionHtml.encodeJsonString()
+        val encodedSubdomains = subdomains?.encodeJsonString() ?: "null"
+        return """{"id":$encodedId,"tileUrlTemplate":$encodedTileUrl,"attributionHtml":$encodedAttribution,"maxZoom":$maxZoom,"subdomains":$encodedSubdomains}"""
     }
 
     private fun String.encodeJsonString(): String {

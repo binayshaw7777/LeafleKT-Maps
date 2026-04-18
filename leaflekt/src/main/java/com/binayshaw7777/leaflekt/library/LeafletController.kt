@@ -1,6 +1,5 @@
 package com.binayshaw7777.leaflekt.library
 
-import android.util.Log
 import android.webkit.WebView
 
 /**
@@ -18,6 +17,20 @@ class LeafletController internal constructor() {
      */
     fun setCenter(lat: Double, lng: Double, zoom: Double) {
         enqueueOrRun(LeafletScriptBuilder.moveCameraScript(lat = lat, lng = lng, zoom = zoom))
+    }
+
+    /**
+     * Shows or hides the Leaflet zoom controls.
+     */
+    fun setZoomControlsEnabled(isEnabled: Boolean) {
+        enqueueOrRun(LeafletScriptBuilder.setZoomControlsEnabledScript(isEnabled))
+    }
+
+    /**
+     * Replaces the active tile layer with one of the built-in map styles.
+     */
+    fun setMapStyle(style: LeafletMapStyle) {
+        enqueueOrRun(LeafletScriptBuilder.setMapStyleScript(style))
     }
 
     /**
@@ -44,33 +57,36 @@ class LeafletController internal constructor() {
         enqueueOrRun(LeafletScriptBuilder.clearMarkersScript())
     }
 
-    internal fun initializeMap(initialLat: Double, initialLng: Double, initialZoom: Double) {
-        Log.d(TAG, "initializeMap lat=$initialLat lng=$initialLng zoom=$initialZoom")
+    internal fun initializeMap(
+        initialLat: Double,
+        initialLng: Double,
+        initialZoom: Double,
+        isZoomControlEnabled: Boolean,
+        initialMapStyle: LeafletMapStyle
+    ) {
         enqueueOrRun(LeafletScriptBuilder.initMapScript(initialLat, initialLng, initialZoom))
+        enqueueOrRun(LeafletScriptBuilder.setZoomControlsEnabledScript(isZoomControlEnabled))
+        enqueueOrRun(LeafletScriptBuilder.setMapStyleScript(initialMapStyle))
     }
 
     internal fun attachWebView(webView: WebView) {
-        Log.d(TAG, "attachWebView width=${webView.width} height=${webView.height}")
         this.webView = webView
         flushPendingScripts()
     }
 
     internal fun detachWebView(webView: WebView) {
         if (this.webView === webView) {
-            Log.d(TAG, "detachWebView")
             this.webView = null
             isMapReady = false
         }
     }
 
     internal fun notifyMapReady() {
-        Log.d(TAG, "notifyMapReady pendingScripts=${pendingScripts.size}")
         isMapReady = true
         flushPendingScripts()
     }
 
     private fun enqueueOrRun(script: String) {
-        Log.d(TAG, "enqueueOrRun ready=$isMapReady hasWebView=${webView != null} script=$script")
         if (isMapReady && webView != null) {
             jsExecutor.runJS(script)
             return
@@ -80,16 +96,10 @@ class LeafletController internal constructor() {
 
     private fun flushPendingScripts() {
         if (!isMapReady || webView == null) {
-            Log.d(TAG, "flushPendingScripts skipped ready=$isMapReady hasWebView=${webView != null}")
             return
         }
-        Log.d(TAG, "flushPendingScripts count=${pendingScripts.size}")
         while (pendingScripts.isNotEmpty()) {
             jsExecutor.runJS(pendingScripts.removeFirst())
         }
-    }
-
-    private companion object {
-        const val TAG = "LeafleKT.Controller"
     }
 }

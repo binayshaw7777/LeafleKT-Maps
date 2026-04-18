@@ -1,7 +1,6 @@
 package com.binayshaw7777.leaflekt
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,9 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
@@ -25,13 +29,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.binayshaw7777.leaflekt.library.LeafletCameraPosition
+import com.binayshaw7777.leaflekt.library.LeafletCameraPositionState
 import com.binayshaw7777.leaflekt.library.LeafletController
 import com.binayshaw7777.leaflekt.library.LeafletMap
+import com.binayshaw7777.leaflekt.library.LeafletLatLng
+import com.binayshaw7777.leaflekt.library.LeafletMapProperties
+import com.binayshaw7777.leaflekt.library.LeafletMapStyle
+import com.binayshaw7777.leaflekt.library.LeafletMapUiSettings
 import com.binayshaw7777.leaflekt.library.Marker
+import com.binayshaw7777.leaflekt.library.rememberLeafletCameraPositionState
 import com.binayshaw7777.leaflekt.ui.theme.LeafleKTTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,14 +59,25 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
     var controller by remember { mutableStateOf<LeafletController?>(null) }
     var markerSequence by rememberSaveable { mutableIntStateOf(0) }
     var selectedZoom by rememberSaveable { mutableFloatStateOf(12f) }
-    var activeCenterLat by rememberSaveable { mutableDoubleStateOf(22.5726) }
-    var activeCenterLng by rememberSaveable { mutableDoubleStateOf(88.3639) }
+    var activeMarkerLat by rememberSaveable { mutableDoubleStateOf(22.5726) }
+    var activeMarkerLng by rememberSaveable { mutableDoubleStateOf(88.3639) }
+    var selectedMapStyle by rememberSaveable { mutableStateOf(LeafletMapStyle.OpenStreetMap) }
+    var isStyleMenuExpanded by remember { mutableStateOf(false) }
     var lastTap by rememberSaveable { mutableStateOf("Tap on map to capture coordinates") }
     var lastMarkerId by rememberSaveable { mutableStateOf("No marker clicked yet") }
+    val cameraPositionState = rememberLeafletCameraPositionState(
+        initialPosition = LeafletCameraPosition(
+            target = LeafletLatLng(latitude = 22.5726, longitude = 88.3639),
+            zoom = 12.0
+        )
+    )
+    val mapProperties = LeafletMapProperties(mapStyle = selectedMapStyle)
+    val mapUiSettings = LeafletMapUiSettings(isZoomControlEnabled = false)
 
     Column(
         modifier = modifier.padding(12.dp),
@@ -66,6 +89,39 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             Text(text = "Marker click: $lastMarkerId", style = MaterialTheme.typography.bodySmall)
         }
 
+        ExposedDropdownMenuBox(
+            expanded = isStyleMenuExpanded,
+            onExpandedChange = { isStyleMenuExpanded = it }
+        ) {
+            TextField(
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                value = selectedMapStyle.displayName(),
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Map style") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = isStyleMenuExpanded)
+                }
+            )
+
+            ExposedDropdownMenu(
+                expanded = isStyleMenuExpanded,
+                onDismissRequest = { isStyleMenuExpanded = false }
+            ) {
+                LeafletMapStyle.entries.forEach { mapStyle ->
+                    DropdownMenuItem(
+                        text = { Text(mapStyle.displayName()) },
+                        onClick = {
+                            selectedMapStyle = mapStyle
+                            isStyleMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -73,22 +129,28 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    activeCenterLat = 22.5726
-                    activeCenterLng = 88.3639
-                    controller?.setCenter(activeCenterLat, activeCenterLng, selectedZoom.toDouble())
+                    moveCamera(
+                        cameraPositionState = cameraPositionState,
+                        latitude = 22.5726,
+                        longitude = 88.3639,
+                        zoom = selectedZoom.toDouble()
+                    )
                 }
             ) {
-                Text("Kolkata")
+                Text("Kolkata", fontSize = 14.sp)
             }
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    activeCenterLat = 12.9716
-                    activeCenterLng = 77.5946
-                    controller?.setCenter(activeCenterLat, activeCenterLng, selectedZoom.toDouble())
+                    moveCamera(
+                        cameraPositionState = cameraPositionState,
+                        latitude = 12.9716,
+                        longitude = 77.5946,
+                        zoom = selectedZoom.toDouble()
+                    )
                 }
             ) {
-                Text("Bengaluru")
+                Text(text = "Bengaluru", fontSize = 14.sp)
             }
             Button(
                 modifier = Modifier.weight(1f),
@@ -110,7 +172,10 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                 onValueChange = { selectedZoom = it },
                 valueRange = 3f..18f,
                 onValueChangeFinished = {
-                    controller?.setCenter(activeCenterLat, activeCenterLng, selectedZoom.toDouble())
+                    cameraPositionState.move(
+                        target = cameraPositionState.position.target,
+                        zoom = selectedZoom.toDouble()
+                    )
                 }
             )
         }
@@ -126,8 +191,8 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                     controller?.addMarker(
                         Marker(
                             id = "single-$markerSequence",
-                            lat = activeCenterLat,
-                            lng = activeCenterLng,
+                            lat = activeMarkerLat,
+                            lng = activeMarkerLng,
                             title = "Single marker #$markerSequence"
                         )
                     )
@@ -144,20 +209,20 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                         listOf(
                             Marker(
                                 id = "cluster-${base + 1}",
-                                lat = activeCenterLat + 0.01,
-                                lng = activeCenterLng + 0.01,
+                                lat = activeMarkerLat + 0.01,
+                                lng = activeMarkerLng + 0.01,
                                 title = "Cluster A"
                             ),
                             Marker(
                                 id = "cluster-${base + 2}",
-                                lat = activeCenterLat + 0.02,
-                                lng = activeCenterLng - 0.01,
+                                lat = activeMarkerLat + 0.02,
+                                lng = activeMarkerLng - 0.01,
                                 title = "Cluster B"
                             ),
                             Marker(
                                 id = "cluster-${base + 3}",
-                                lat = activeCenterLat - 0.02,
-                                lng = activeCenterLng + 0.01,
+                                lat = activeMarkerLat - 0.02,
+                                lng = activeMarkerLng + 0.01,
                                 title = "Cluster C"
                             )
                         )
@@ -172,22 +237,19 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            initialCenterLat = activeCenterLat,
-            initialCenterLng = activeCenterLng,
-            initialZoom = selectedZoom.toDouble(),
+            cameraPositionState = cameraPositionState,
+            contentDescription = "LeafleKT demo map",
+            properties = mapProperties,
+            uiSettings = mapUiSettings,
             onReady = { leafletController ->
-                Log.d("LeafleKT.Demo", "onReady")
                 controller = leafletController
-                leafletController.setCenter(activeCenterLat, activeCenterLng, selectedZoom.toDouble())
             },
-            onMapClick = { lat, lng ->
-                Log.d("LeafleKT.Demo", "onMapClick lat=$lat lng=$lng")
-                activeCenterLat = lat
-                activeCenterLng = lng
-                lastTap = "Tap: %.5f, %.5f".format(lat, lng)
+            onMapClick = { point ->
+                activeMarkerLat = point.latitude
+                activeMarkerLng = point.longitude
+                lastTap = "Tap: %.5f, %.5f".format(point.latitude, point.longitude)
             },
             onMarkerClick = { markerId ->
-                Log.d("LeafleKT.Demo", "onMarkerClick id=$markerId")
                 lastMarkerId = markerId
             }
         )
@@ -200,4 +262,28 @@ private fun LeafletDemoPreview() {
     LeafleKTTheme {
         LeafletDemoScreen()
     }
+}
+
+private fun LeafletMapStyle.displayName(): String {
+    return when (this) {
+        LeafletMapStyle.OpenStreetMap -> "OpenStreetMap"
+        LeafletMapStyle.CartoLight -> "CARTO Light"
+        LeafletMapStyle.CartoDark -> "CARTO Dark"
+        LeafletMapStyle.OpenTopoMap -> "OpenTopoMap"
+        LeafletMapStyle.EsriWorldImagery -> "Esri World Imagery"
+    }
+}
+
+private fun moveCamera(
+    cameraPositionState: LeafletCameraPositionState,
+    latitude: Double,
+    longitude: Double,
+    zoom: Double
+) {
+    cameraPositionState.move(
+        position = LeafletCameraPosition(
+            target = LeafletLatLng(latitude = latitude, longitude = longitude),
+            zoom = zoom
+        )
+    )
 }

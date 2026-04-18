@@ -32,8 +32,8 @@
 
 ### Phase 3 - HTML Engine
 - [x] `leaflekt/src/main/assets/map.html` created
-- [x] Leaflet CSS (CDN) included
-- [x] Leaflet JS (CDN) included
+- [x] Leaflet CSS bundled locally
+- [x] Leaflet JS bundled locally
 - [x] Fullscreen map div + no margins
 - [x] JS map initialization
 - [x] Default center and zoom
@@ -81,11 +81,11 @@
 - [x] Marker model fields aligned with plan
 
 ### Phase 10 - Testing
-- [ ] Map loads (manual runtime)
-- [ ] Marker added (manual runtime)
-- [ ] Multiple markers (manual runtime)
-- [ ] Camera moves (manual runtime)
-- [ ] No crashes (manual runtime)
+- [x] Map loads (manual runtime)
+- [x] Marker added (manual runtime)
+- [x] Multiple markers (manual runtime)
+- [x] Camera moves (manual runtime)
+- [x] No crashes (manual runtime)
 - [x] Unit test added for marker-to-JS payload generation
 - [x] `:leaflekt:testDebugUnitTest` passes
 - [x] `:app:assembleDebug` passes
@@ -110,6 +110,10 @@
 ### Week 1
 - [x] Zoom controls (demo app)
 - [x] Marker click callbacks
+- [x] Built-in tile style switching
+- [x] Always-on India boundary overlay
+- [x] India boundary overlay backed by optimized GeoJSON asset
+- [x] India boundary overlay reacts to active map style
 - [ ] Polylines
 - [ ] Polygons
 - [ ] Circles
@@ -127,7 +131,7 @@
 - [ ] Performance optimizations
 
 ## Success Criteria
-- [ ] Map loads in Compose (pending runtime verification)
+- [x] Map loads in Compose
 - [x] Marker API implemented
 - [ ] JitPack dependency verified
 - [x] Dev integration path documented (<5 min local module integration)
