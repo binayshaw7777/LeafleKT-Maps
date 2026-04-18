@@ -27,8 +27,8 @@
         switch (styleId) {
             case "carto_dark":
                 return {
-                    borderColor: "#adb5bd",
-                    claimedOpacity: 0.45,
+                    borderColor: "#333333",
+                    claimedOpacity: 0.8,
                 };
             case "esri_world_imagery":
                 return {
@@ -37,15 +37,19 @@
                 };
             case "open_topo_map":
                 return {
-                    borderColor: "#6c757d",
-                    claimedOpacity: 0.4,
+                    borderColor: "#9e9e9e",
+                    claimedOpacity: 0.7,
                 };
             case "carto_light":
+                return {
+                    borderColor: "#dbdbdb",
+                    claimedOpacity: 0.8,
+                };
             case "open_street_map":
             default:
                 return {
-                    borderColor: "#868e96",
-                    claimedOpacity: 0.45,
+                    borderColor: "#ac46ac",
+                    claimedOpacity: 0.6,
                 };
         }
     }
