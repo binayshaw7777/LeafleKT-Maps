@@ -56,6 +56,29 @@ internal fun LeafletWebView(
                     }
                 }
                 webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView?,
+                        request: WebResourceRequest?
+                    ): Boolean {
+                        val url = request?.url?.toString() ?: return false
+
+                        // If it's the local map asset or a map tile, let the WebView handle it
+                        if (url.startsWith("https://appassets.androidview.static/assets/") || 
+                            url.startsWith("https://tile.openstreetmap.org") ||
+                            url.startsWith("https://basemaps.cartocdn.com")) {
+                            return false
+                        }
+
+                        // For any other links (attribution links), open in external browser
+                        try {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                            view?.context?.startActivity(intent)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to open external link: $url", e)
+                        }
+                        return true
+                    }
+
                     override fun shouldInterceptRequest(
                         view: WebView?,
                         request: WebResourceRequest?
