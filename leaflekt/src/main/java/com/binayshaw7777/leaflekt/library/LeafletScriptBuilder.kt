@@ -9,10 +9,6 @@ internal object LeafletScriptBuilder {
         return "window.LeafletBridge.setZoomControlsEnabled($isEnabled);"
     }
 
-    fun setIndiaBoundaryOverlayVisibleScript(isVisible: Boolean): String {
-        return "window.LeafletBridge.setIndiaBoundaryOverlayVisible($isVisible);"
-    }
-
     fun setMapStyleScript(style: LeafletMapStyle): String {
         return "window.LeafletBridge.setMapStyle(${style.toJson()});"
     }

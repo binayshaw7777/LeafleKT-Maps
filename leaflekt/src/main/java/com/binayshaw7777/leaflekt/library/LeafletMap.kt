@@ -59,8 +59,7 @@ fun LeafletMap(
             initialLng = cameraPositionState.position.target.longitude,
             initialZoom = cameraPositionState.position.zoom,
             isZoomControlEnabled = uiSettings.isZoomControlEnabled,
-            initialMapStyle = properties.mapStyle,
-            isIndiaBoundaryOverlayVisible = properties.isIndiaBoundaryOverlayVisible
+            initialMapStyle = properties.mapStyle
         )
     }
 
@@ -74,7 +73,6 @@ fun LeafletMap(
 
     LaunchedEffect(properties) {
         controller.setMapStyle(properties.mapStyle)
-        controller.setIndiaBoundaryOverlayVisible(properties.isIndiaBoundaryOverlayVisible)
     }
 
     LaunchedEffect(uiSettings) {

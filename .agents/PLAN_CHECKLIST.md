@@ -111,7 +111,9 @@
 - [x] Zoom controls (demo app)
 - [x] Marker click callbacks
 - [x] Built-in tile style switching
-- [x] Optional India boundary overlay toggle
+- [x] Always-on India boundary overlay
+- [x] India boundary overlay backed by optimized GeoJSON asset
+- [x] India boundary overlay reacts to active map style
 - [ ] Polylines
 - [ ] Polygons
 - [ ] Circles

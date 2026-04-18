@@ -44,7 +44,6 @@
         let activeTileLayer = null;
         let activeZoomControl = null;
         let activeMapStyle = defaultMapStyle;
-        let isIndiaBoundaryOverlayVisible = true;
         let isZoomControlEnabled = true;
         const markers = [];
 
@@ -160,6 +159,7 @@
 
             activeTileLayer = createTileLayer(style);
             activeTileLayer.addTo(map);
+            applyIndiaBoundaryOverlayTheme();
         }
 
         function applyIndiaBoundaryOverlayVisibility() {
@@ -167,7 +167,15 @@
                 return;
             }
 
-            window.LeafleKTIndiaBoundaryOverlay.setVisible(map, isIndiaBoundaryOverlayVisible);
+            window.LeafleKTIndiaBoundaryOverlay.setVisible(map, true);
+        }
+
+        function applyIndiaBoundaryOverlayTheme() {
+            if (map === null || typeof window.LeafleKTIndiaBoundaryOverlay === "undefined") {
+                return;
+            }
+
+            window.LeafleKTIndiaBoundaryOverlay.setMapStyle(map, activeMapStyle.id);
         }
 
         function nextMarkerId() {
@@ -211,10 +219,6 @@
                     maxZoom: Number(style.maxZoom || defaultMapStyle.maxZoom),
                     subdomains: style.subdomains || null
                 });
-            },
-            setIndiaBoundaryOverlayVisible: function (isVisible) {
-                isIndiaBoundaryOverlayVisible = Boolean(isVisible);
-                applyIndiaBoundaryOverlayVisibility();
             },
             addMarker: function (lat, lng, title) {
                 addMarkerLayer({ lat: lat, lng: lng, title: title || null });
