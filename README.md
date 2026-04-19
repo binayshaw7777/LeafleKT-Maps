@@ -114,6 +114,12 @@ The library includes a pre-configured India border overlay that reacts to the ac
 - **Map Data:** This library does not provide map tiles. Users are responsible for complying with the attribution requirements of their chosen tile provider (e.g., [OpenStreetMap](https://www.openstreetmap.org/copyright)).
 - **India Boundaries:** Boundary data is derived from OpenStreetMap contributors and optimized for mobile performance.
 
+## ⚠️ Legal Disclaimer (FYI)
+
+- **Not an Official Product:** LeafleKT is an independent open-source project. It is **not** affiliated with, authorized, maintained, sponsored, or endorsed by Google LLC, the Leaflet.js team, or the OpenStreetMap Foundation.
+- **API Design:** The API pattern (e.g., `CameraPositionState`) is modeled after Google Maps Compose to provide a familiar experience for Android developers. All implementation code is original to this project and does not use proprietary Google source code.
+- **Geopolitical Data:** The India boundary overlay is provided based on the author's recognition and representation of national borders. It is included for general visualization purposes. In future releases, I intend to offer developers the flexibility to customize or provide their own boundary data to meet their specific regional requirements. Developers are responsible for ensuring compliance with local laws regarding map displays in their specific regions.
+
 ## 📄 License
 LeafleKT is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.
 

@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: release-master
@@ -43,10 +45,7 @@ jobs:
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.value }}"
-          # Automatically update the version in the implementation snippet
           sed -i "s/LeafleKT-Maps:[0-9]\+\.[0-9]\+\.[0-9]\+/LeafleKT-Maps:$VERSION/g" README.md
-          
-          # Commit the change if README was updated
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
@@ -67,6 +66,17 @@ jobs:
       - name: Verify Release Build
         if: steps.tag.outputs.exists == 'false'
         run: ./gradlew :leaflekt:testDebugUnitTest :leaflekt:assembleRelease :leaflekt:publishReleasePublicationToMavenLocal :app:assembleDebug
+
+      - name: Generate Documentation (Dokka)
+        if: steps.tag.outputs.exists == 'false'
+        run: ./gradlew :leaflekt:dokkaHtml
+
+      - name: Deploy Documentation to GitHub Pages
+        if: steps.tag.outputs.exists == 'false'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: leaflekt/build/dokka/html
+          branch: gh-pages
 
       - name: Create GitHub Release
         id: github_release
