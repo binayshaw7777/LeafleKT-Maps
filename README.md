@@ -44,7 +44,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("com.github.binayshaw7777:LeafleKT-Maps:0.3.0")
+    implementation("com.github.binayshaw7777:LeafleKT-Maps:0.4.0")
 }
 ```
 
