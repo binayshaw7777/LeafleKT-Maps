@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set Up Java
         uses: actions/setup-java@v4
@@ -38,20 +39,25 @@ jobs:
           VERSION="$(tr -d '[:space:]' < VERSION)"
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Validate Version
+      - name: Update README Version
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.value }}"
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "VERSION must match SemVer MAJOR.MINOR.PATCH"
-            exit 1
-          fi
+          # Automatically update the version in the implementation snippet
+          sed -i "s/LeafleKT-Maps:[0-9]\+\.[0-9]\+\.[0-9]\+/LeafleKT-Maps:$VERSION/g" README.md
+          
+          # Commit the change if README was updated
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "docs: Update README version to $VERSION [skip ci]"
+          git push origin master
 
       - name: Check Existing Tag
         id: tag
         shell: bash
         run: |
-          TAG="v${{ steps.version.outputs.value }}"
+          TAG="${{ steps.version.outputs.value }}"
           if git rev-parse "$TAG" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
@@ -67,9 +73,9 @@ jobs:
         if: steps.tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.value }}
-          name: v${{ steps.version.outputs.value }}
-          target_commitish: ${{ github.sha }}
+          tag_name: ${{ steps.version.outputs.value }}
+          name: ${{ steps.version.outputs.value }}
+          target_commitish: master
           generate_release_notes: true
           files: |
             leaflekt/build/outputs/aar/leaflekt-release.aar
@@ -78,12 +84,8 @@ jobs:
         if: steps.tag.outputs.exists == 'false'
         shell: bash
         run: |
-          TAG="v${{ steps.version.outputs.value }}"
+          TAG="${{ steps.version.outputs.value }}"
           REPO_OWNER="${{ github.repository_owner }}"
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
           curl --fail --location --silent --show-error \
             "https://jitpack.io/com/github/${REPO_OWNER}/${REPO_NAME}/${TAG}/build.log" || true
-
-      - name: Skip Existing Release
-        if: steps.tag.outputs.exists == 'true'
-        run: echo "Release tag already exists for VERSION=${{ steps.version.outputs.value }}. Skipping."

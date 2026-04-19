@@ -14,7 +14,7 @@ android {
         applicationId = "com.binayshaw7777.leaflekt"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
+        versionCode = 3
         versionName = releaseVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

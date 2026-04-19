@@ -3,10 +3,10 @@ package com.binayshaw7777.leaflekt.library
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class LeafletScriptBuilderTest {
+class LeaflektScriptBuilderTest {
     @Test
     fun addMarkersScriptContainsAllMarkerFields() {
-        val script = LeafletScriptBuilder.addMarkersScript(
+        val script = LeaflektScriptBuilder.addMarkersScript(
             listOf(Marker(id = "id-1", lat = 10.0, lng = 20.0, title = "Point A"))
         )
 
@@ -19,7 +19,7 @@ class LeafletScriptBuilderTest {
 
     @Test
     fun setMapStyleScriptContainsTileStyleMetadata() {
-        val script = LeafletScriptBuilder.setMapStyleScript(LeafletMapStyle.CartoDark)
+        val script = LeaflektScriptBuilder.setMapStyleScript(LeaflektMapStyle.CartoDark)
 
         assertTrue(script.contains("window.LeafletBridge.setMapStyle("))
         assertTrue(script.contains("\"id\":\"carto_dark\""))

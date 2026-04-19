@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -25,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,16 +36,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.binayshaw7777.leaflekt.library.LeafletCameraPosition
-import com.binayshaw7777.leaflekt.library.LeafletCameraPositionState
-import com.binayshaw7777.leaflekt.library.LeafletController
-import com.binayshaw7777.leaflekt.library.LeafletMap
-import com.binayshaw7777.leaflekt.library.LeafletLatLng
-import com.binayshaw7777.leaflekt.library.LeafletMapProperties
-import com.binayshaw7777.leaflekt.library.LeafletMapStyle
-import com.binayshaw7777.leaflekt.library.LeafletMapUiSettings
-import com.binayshaw7777.leaflekt.library.Marker
-import com.binayshaw7777.leaflekt.library.rememberLeafletCameraPositionState
+import com.binayshaw7777.leaflekt.library.LeaflektCameraPosition
+import com.binayshaw7777.leaflekt.library.LeaflektCameraPositionState
+import com.binayshaw7777.leaflekt.library.LeaflektController
+import com.binayshaw7777.leaflekt.library.LeaflektLatLng
+import com.binayshaw7777.leaflekt.library.LeaflektMap
+import com.binayshaw7777.leaflekt.library.LeaflektMapProperties
+import com.binayshaw7777.leaflekt.library.LeaflektMapStyle
+import com.binayshaw7777.leaflekt.library.LeaflektMapUiSettings
+import com.binayshaw7777.leaflekt.library.LeaflektMarker
+import com.binayshaw7777.leaflekt.library.LeaflektMarkerInfo
+import com.binayshaw7777.leaflekt.library.rememberLeaflektCameraPositionState
 import com.binayshaw7777.leaflekt.ui.theme.LeafleKTTheme
 
 class MainActivity : ComponentActivity() {
@@ -52,7 +55,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             LeafleKTTheme {
-                LeafletDemoScreen(modifier = Modifier.fillMaxSize())
+                LeaflektDemoScreen(modifier = Modifier.fillMaxSize())
             }
         }
     }
@@ -60,24 +63,28 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
-    var controller by remember { mutableStateOf<LeafletController?>(null) }
+private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
+    var controller by remember { mutableStateOf<LeaflektController?>(null) }
     var markerSequence by rememberSaveable { mutableIntStateOf(0) }
     var selectedZoom by rememberSaveable { mutableFloatStateOf(12f) }
     var activeMarkerLat by rememberSaveable { mutableDoubleStateOf(22.5726) }
     var activeMarkerLng by rememberSaveable { mutableDoubleStateOf(88.3639) }
-    var selectedMapStyle by rememberSaveable { mutableStateOf(LeafletMapStyle.OpenStreetMap) }
+    var selectedMapStyle by rememberSaveable { mutableStateOf(LeaflektMapStyle.OpenStreetMap) }
     var isStyleMenuExpanded by remember { mutableStateOf(false) }
     var lastTap by rememberSaveable { mutableStateOf("Tap on map to capture coordinates") }
     var lastMarkerId by rememberSaveable { mutableStateOf("No marker clicked yet") }
-    val cameraPositionState = rememberLeafletCameraPositionState(
-        initialPosition = LeafletCameraPosition(
-            target = LeafletLatLng(latitude = 22.5726, longitude = 88.3639),
+    
+    // Declarative markers list
+    val declarativeMarkers = remember { mutableStateListOf<LeaflektMarkerInfo>() }
+
+    val cameraPositionState = rememberLeaflektCameraPositionState {
+        position = LeaflektCameraPosition(
+            target = LeaflektLatLng(latitude = 22.5726, longitude = 88.3639),
             zoom = 12.0
         )
-    )
-    val mapProperties = LeafletMapProperties(mapStyle = selectedMapStyle)
-    val mapUiSettings = LeafletMapUiSettings(isZoomControlEnabled = false)
+    }
+    val mapProperties = LeaflektMapProperties(mapStyle = selectedMapStyle)
+    val mapUiSettings = LeaflektMapUiSettings(zoomControlsEnabled = false)
 
     Column(
         modifier = modifier.padding(12.dp),
@@ -95,7 +102,7 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
         ) {
             TextField(
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     .fillMaxWidth(),
                 value = selectedMapStyle.displayName(),
                 onValueChange = {},
@@ -110,7 +117,7 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                 expanded = isStyleMenuExpanded,
                 onDismissRequest = { isStyleMenuExpanded = false }
             ) {
-                LeafletMapStyle.entries.forEach { mapStyle ->
+                LeaflektMapStyle.entries.forEach { mapStyle ->
                     DropdownMenuItem(
                         text = { Text(mapStyle.displayName()) },
                         onClick = {
@@ -129,10 +136,8 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    moveCamera(
-                        cameraPositionState = cameraPositionState,
-                        latitude = 22.5726,
-                        longitude = 88.3639,
+                    cameraPositionState.move(
+                        target = LeaflektLatLng(latitude = 22.5726, longitude = 88.3639),
                         zoom = selectedZoom.toDouble()
                     )
                 }
@@ -142,10 +147,8 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    moveCamera(
-                        cameraPositionState = cameraPositionState,
-                        latitude = 12.9716,
-                        longitude = 77.5946,
+                    cameraPositionState.move(
+                        target = LeaflektLatLng(latitude = 12.9716, longitude = 77.5946),
                         zoom = selectedZoom.toDouble()
                     )
                 }
@@ -154,7 +157,7 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             }
             Button(
                 modifier = Modifier.weight(1f),
-                onClick = { controller?.clearMarkers() }
+                onClick = { declarativeMarkers.clear() }
             ) {
                 Text("Clear")
             }
@@ -188,52 +191,21 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f),
                 onClick = {
                     markerSequence += 1
-                    controller?.addMarker(
-                        Marker(
-                            id = "single-$markerSequence",
+                    declarativeMarkers.add(
+                        LeaflektMarkerInfo(
+                            id = "marker-$markerSequence",
                             lat = activeMarkerLat,
                             lng = activeMarkerLng,
-                            title = "Single marker #$markerSequence"
+                            title = "Marker #$markerSequence"
                         )
                     )
                 }
             ) {
                 Text("Add Marker")
             }
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    markerSequence += 1
-                    val base = markerSequence * 10
-                    controller?.addMarkers(
-                        listOf(
-                            Marker(
-                                id = "cluster-${base + 1}",
-                                lat = activeMarkerLat + 0.01,
-                                lng = activeMarkerLng + 0.01,
-                                title = "Cluster A"
-                            ),
-                            Marker(
-                                id = "cluster-${base + 2}",
-                                lat = activeMarkerLat + 0.02,
-                                lng = activeMarkerLng - 0.01,
-                                title = "Cluster B"
-                            ),
-                            Marker(
-                                id = "cluster-${base + 3}",
-                                lat = activeMarkerLat - 0.02,
-                                lng = activeMarkerLng + 0.01,
-                                title = "Cluster C"
-                            )
-                        )
-                    )
-                }
-            ) {
-                Text("Add 3")
-            }
         }
 
-        LeafletMap(
+        LeaflektMap(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
@@ -241,8 +213,8 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             contentDescription = "LeafleKT demo map app",
             properties = mapProperties,
             uiSettings = mapUiSettings,
-            onReady = { leafletController ->
-                controller = leafletController
+            onReady = { leaflektController ->
+                controller = leaflektController
             },
             onMapClick = { point ->
                 activeMarkerLat = point.latitude
@@ -252,38 +224,33 @@ private fun LeafletDemoScreen(modifier: Modifier = Modifier) {
             onMarkerClick = { markerId ->
                 lastMarkerId = markerId
             }
-        )
+        ) {
+            // Declarative Markers!
+            declarativeMarkers.forEach { marker ->
+                LeaflektMarker(
+                    position = LeaflektLatLng(marker.lat, marker.lng),
+                    title = marker.title,
+                    id = marker.id ?: ""
+                )
+            }
+        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun LeafletDemoPreview() {
+private fun LeaflektDemoPreview() {
     LeafleKTTheme {
-        LeafletDemoScreen()
+        LeaflektDemoScreen()
     }
 }
 
-private fun LeafletMapStyle.displayName(): String {
+private fun LeaflektMapStyle.displayName(): String {
     return when (this) {
-        LeafletMapStyle.OpenStreetMap -> "OpenStreetMap"
-        LeafletMapStyle.CartoLight -> "CARTO Light"
-        LeafletMapStyle.CartoDark -> "CARTO Dark"
-        LeafletMapStyle.OpenTopoMap -> "OpenTopoMap"
-        LeafletMapStyle.EsriWorldImagery -> "Esri World Imagery"
+        LeaflektMapStyle.OpenStreetMap -> "OpenStreetMap"
+        LeaflektMapStyle.CartoLight -> "CARTO Light"
+        LeaflektMapStyle.CartoDark -> "CARTO Dark"
+        LeaflektMapStyle.OpenTopoMap -> "OpenTopoMap"
+        LeaflektMapStyle.EsriWorldImagery -> "Esri World Imagery"
     }
-}
-
-private fun moveCamera(
-    cameraPositionState: LeafletCameraPositionState,
-    latitude: Double,
-    longitude: Double,
-    zoom: Double
-) {
-    cameraPositionState.move(
-        position = LeafletCameraPosition(
-            target = LeafletLatLng(latitude = latitude, longitude = longitude),
-            zoom = zoom
-        )
-    )
 }

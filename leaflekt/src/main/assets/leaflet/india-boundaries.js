@@ -132,7 +132,7 @@
         });
     }
 
-    window.LeafleKTIndiaBoundaryOverlay = {
+    window.LeaflektIndiaBoundaryOverlay = {
         setVisible: function (map, isVisible) {
             if (!map) {
                 return;

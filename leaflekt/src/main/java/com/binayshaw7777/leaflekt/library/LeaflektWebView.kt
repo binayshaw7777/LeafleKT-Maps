@@ -17,10 +17,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
 
 @Composable
-internal fun LeafletWebView(
+internal fun LeaflektWebView(
     modifier: Modifier,
-    controller: LeafletController,
-    jsBridge: LeafletJsBridge,
+    controller: LeaflektController,
+    jsBridge: LeaflektJsBridge,
     contentDescription: String?
 ) {
     val webViewState = remember { mutableStateOf<WebView?>(null) }
@@ -40,6 +40,7 @@ internal fun LeafletWebView(
                 settings.allowFileAccess = true
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
+                
                 webChromeClient = object : WebChromeClient() {
                     override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                         if (
@@ -55,6 +56,7 @@ internal fun LeafletWebView(
                         return super.onConsoleMessage(consoleMessage)
                     }
                 }
+                
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(
                         view: WebView?,
@@ -62,10 +64,14 @@ internal fun LeafletWebView(
                     ): Boolean {
                         val url = request?.url?.toString() ?: return false
 
-                        // If it's the local map asset or a map tile, let the WebView handle it
-                        if (url.startsWith("https://appassets.androidview.static/assets/") || 
-                            url.startsWith("https://tile.openstreetmap.org") ||
-                            url.startsWith("https://basemaps.cartocdn.com")) {
+                        // Whitelist local assets and ALL official map tile providers
+                        val isInternal = url.startsWith("https://appassets.androidplatform.net/")
+                        val isMapTile = url.contains(".tile.openstreetmap.org") ||
+                                        url.contains(".basemaps.cartocdn.com") ||
+                                        url.contains(".tile.opentopomap.org") ||
+                                        url.contains("server.arcgisonline.com")
+
+                        if (isInternal || isMapTile) {
                             return false
                         }
 
@@ -88,10 +94,6 @@ internal fun LeafletWebView(
                             ?: super.shouldInterceptRequest(view, safeRequest)
                     }
 
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                    }
-
                     override fun onReceivedError(
                         view: WebView?,
                         request: WebResourceRequest?,
@@ -105,14 +107,15 @@ internal fun LeafletWebView(
                         super.onReceivedError(view, request, error)
                     }
                 }
+                
                 addJavascriptInterface(jsBridge, JS_BRIDGE_NAME)
                 loadUrl(MAP_ASSET_URL)
-                controller.attachWebView(this)
+                controller.setWebView(this)
                 webViewState.value = this
             }
         },
         update = { webView ->
-            controller.attachWebView(webView)
+            controller.setWebView(webView)
             webView.contentDescription = contentDescription
             webViewState.value = webView
         }
@@ -121,7 +124,7 @@ internal fun LeafletWebView(
     DisposableEffect(Unit) {
         onDispose {
             val webView = webViewState.value ?: return@onDispose
-            controller.detachWebView(webView)
+            controller.setWebView(null)
             webView.removeJavascriptInterface(JS_BRIDGE_NAME)
             webView.stopLoading()
             webView.destroy()
@@ -130,4 +133,4 @@ internal fun LeafletWebView(
     }
 }
 
-private const val TAG = "LeafleKT.WebView"
+private const val TAG = "Leaflekt.WebView"

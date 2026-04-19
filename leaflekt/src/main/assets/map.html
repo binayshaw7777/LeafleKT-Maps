@@ -31,7 +31,7 @@
         const DEFAULT_LAT = 22.5726;
         const DEFAULT_LNG = 88.3639;
         const DEFAULT_ZOOM = 12;
-        const bridgeName = "LeafletAndroidBridge";
+        const bridgeName = "LeaflektAndroidBridge";
         const defaultMapStyle = {
             id: "open_street_map",
             tileUrlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -45,7 +45,7 @@
         let activeZoomControl = null;
         let activeMapStyle = defaultMapStyle;
         let isZoomControlEnabled = true;
-        const markers = [];
+        const markerLayers = new Map();
 
         function getAndroidBridge() {
             return window[bridgeName];
@@ -163,19 +163,19 @@
         }
 
         function applyIndiaBoundaryOverlayVisibility() {
-            if (map === null || typeof window.LeafleKTIndiaBoundaryOverlay === "undefined") {
+            if (map === null || typeof window.LeaflektIndiaBoundaryOverlay === "undefined") {
                 return;
             }
 
-            window.LeafleKTIndiaBoundaryOverlay.setVisible(map, true);
+            window.LeaflektIndiaBoundaryOverlay.setVisible(map, true);
         }
 
         function applyIndiaBoundaryOverlayTheme() {
-            if (map === null || typeof window.LeafleKTIndiaBoundaryOverlay === "undefined") {
+            if (map === null || typeof window.LeaflektIndiaBoundaryOverlay === "undefined") {
                 return;
             }
 
-            window.LeafleKTIndiaBoundaryOverlay.setMapStyle(map, activeMapStyle.id);
+            window.LeaflektIndiaBoundaryOverlay.setMapStyle(map, activeMapStyle.id);
         }
 
         function nextMarkerId() {
@@ -195,17 +195,37 @@
                 notifyMarkerClick(markerId);
             });
 
-            markers.push(markerLayer);
+            markerLayers.set(markerId, markerLayer);
             return markerId;
         }
 
-        window.LeafletBridge = {
+        window.LeaflektBridge = {
             initMap: function (lat, lng, zoom) {
                 ensureMap(lat, lng, zoom);
             },
             setZoomControlsEnabled: function (isEnabled) {
                 isZoomControlEnabled = Boolean(isEnabled);
                 applyZoomControls();
+            },
+            setScrollGesturesEnabled: function (isEnabled) {
+                if (map === null) return;
+                if (isEnabled) {
+                    map.dragging.enable();
+                } else {
+                    map.dragging.disable();
+                }
+            },
+            setZoomGesturesEnabled: function (isEnabled) {
+                if (map === null) return;
+                if (isEnabled) {
+                    map.touchZoom.enable();
+                    map.doubleClickZoom.enable();
+                    map.scrollWheelZoom.enable();
+                } else {
+                    map.touchZoom.disable();
+                    map.doubleClickZoom.disable();
+                    map.scrollWheelZoom.disable();
+                }
             },
             setMapStyle: function (style) {
                 if (!style || !style.tileUrlTemplate || !style.attributionHtml) {
@@ -238,6 +258,36 @@
                     });
                 });
             },
+            removeMarker: function (markerId) {
+                if (map === null || !markerId) {
+                    return;
+                }
+                const markerLayer = markerLayers.get(markerId);
+                if (markerLayer) {
+                    map.removeLayer(markerLayer);
+                    markerLayers.delete(markerId);
+                }
+            },
+            updateMarker: function (marker) {
+                if (map === null || !marker || !marker.id) {
+                    return;
+                }
+                const markerLayer = markerLayers.get(marker.id);
+                if (markerLayer) {
+                    // Update position
+                    markerLayer.setLatLng([marker.lat, marker.lng]);
+                    
+                    // Update popup
+                    if (marker.title) {
+                        markerLayer.setPopupContent(marker.title);
+                    } else {
+                        markerLayer.unbindPopup();
+                    }
+
+                    // Update opacity
+                    markerLayer.setOpacity(marker.visible ? marker.alpha : 0);
+                }
+            },
             moveCamera: function (lat, lng, zoom) {
                 const activeMap = ensureMap(lat, lng, zoom);
                 activeMap.setView([lat, lng], zoom);
@@ -246,15 +296,15 @@
                 if (map === null) {
                     return;
                 }
-                markers.forEach(function (markerLayer) {
+                markerLayers.forEach(function (markerLayer) {
                     map.removeLayer(markerLayer);
                 });
-                markers.length = 0;
+                markerLayers.clear();
             }
         };
 
         if (typeof L === "undefined") {
-            showLoadError("Leaflet local assets failed to load.");
+            showLoadError("Leaflekt local assets failed to load.");
             return;
         }
 

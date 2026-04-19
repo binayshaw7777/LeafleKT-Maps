@@ -1,7 +1,11 @@
+import org.jetbrains.dokka.gradle.DokkaTask
+import java.time.LocalDate
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.dokka)
     `maven-publish`
 }
 
@@ -99,5 +103,23 @@ publishing {
                 }
             }
         }
+    }
+}
+
+tasks.withType<DokkaTask>().configureEach {
+    moduleName.set("Leaflekt SDK")
+    
+    val currentYear = LocalDate.now().year
+    pluginsMapConfiguration.set(
+        mapOf(
+            "org.jetbrains.dokka.base.DokkaBase" to """{ "footerMessage": "Copyright © $currentYear Binay Shaw - Built with LeafleKT" }"""
+        )
+    )
+
+    dokkaSourceSets.configureEach {
+        includes.from("README.md")
+        
+        // Link to Android documentation
+        noAndroidSdkLink.set(false)
     }
 }
