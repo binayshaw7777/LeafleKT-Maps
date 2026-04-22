@@ -24,42 +24,24 @@ import java.util.Objects
 val DefaultLeaflektMapProperties: LeaflektMapProperties = LeaflektMapProperties()
 
 /**
- * Data-like class for properties that can be set on the Leaflekt map.
- * 
- * ### Usage Example:
- * ```kotlin
- * LeaflektMap(
- *     properties = LeaflektMapProperties(
- *         mapStyle = LeaflektMapStyle.EsriWorldImagery,
- *         isIndiaBoundaryEnabled = true
- *     )
- * )
- * ```
+ * Data-like class for map-level properties that can be set on a [LeaflektMap].
  *
  * @param mapStyle The [LeaflektMapStyle] (tile provider) to use for the map.
- * @param isIndiaBoundaryEnabled Whether to show the official India boundary overlay.
  */
 class LeaflektMapProperties(
-    val mapStyle: LeaflektMapStyle = LeaflektMapStyle.OpenStreetMap,
-    val isIndiaBoundaryEnabled: Boolean = true
+    val mapStyle: LeaflektMapStyle = LeaflektMapStyle.OpenStreetMap
 ) {
-    override fun toString(): String = "LeaflektMapProperties(" +
-            "mapStyle=$mapStyle, isIndiaBoundaryEnabled=$isIndiaBoundaryEnabled)"
+    override fun toString(): String = "LeaflektMapProperties(mapStyle=$mapStyle)"
 
-    override fun equals(other: Any?): Boolean = other is LeaflektMapProperties &&
-            mapStyle == other.mapStyle &&
-            isIndiaBoundaryEnabled == other.isIndiaBoundaryEnabled
+    override fun equals(other: Any?): Boolean =
+        other is LeaflektMapProperties && mapStyle == other.mapStyle
 
-    override fun hashCode(): Int = Objects.hash(mapStyle, isIndiaBoundaryEnabled)
+    override fun hashCode(): Int = Objects.hash(mapStyle)
 
     /**
      * Returns a copy of this [LeaflektMapProperties] with the specified properties updated.
      */
     fun copy(
-        mapStyle: LeaflektMapStyle = this.mapStyle,
-        isIndiaBoundaryEnabled: Boolean = this.isIndiaBoundaryEnabled
-    ): LeaflektMapProperties = LeaflektMapProperties(
-        mapStyle = mapStyle,
-        isIndiaBoundaryEnabled = isIndiaBoundaryEnabled
-    )
+        mapStyle: LeaflektMapStyle = this.mapStyle
+    ): LeaflektMapProperties = LeaflektMapProperties(mapStyle = mapStyle)
 }

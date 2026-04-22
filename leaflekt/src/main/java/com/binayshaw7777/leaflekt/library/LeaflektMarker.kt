@@ -78,9 +78,18 @@ fun LeaflektMarker(
         )
         
         controller.addMarker(info)
+        controller.registerMarkerClick(id, onClick)
 
         onDispose {
+            controller.unregisterMarkerClick(id)
             controller.removeMarker(id)
+        }
+    }
+
+    DisposableEffect(id, onClick) {
+        controller.registerMarkerClick(id, onClick)
+        onDispose {
+            controller.unregisterMarkerClick(id)
         }
     }
 

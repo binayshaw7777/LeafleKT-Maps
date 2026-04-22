@@ -125,7 +125,17 @@ fun LeaflektMap(
                 )
             },
             onMarkerClick = { markerId ->
+                controller.notifyMarkerClick(markerId)
                 currentOnMarkerClick?.invoke(markerId)
+            },
+            onPolylineClick = { polylineId ->
+                controller.notifyPolylineClick(polylineId)
+            },
+            onPolygonClick = { polygonId ->
+                controller.notifyPolygonClick(polygonId)
+            },
+            onCircleClick = { circleId ->
+                controller.notifyCircleClick(circleId)
             }
         )
     }

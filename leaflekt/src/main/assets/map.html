@@ -45,7 +45,12 @@
         let activeZoomControl = null;
         let activeMapStyle = defaultMapStyle;
         let isZoomControlEnabled = true;
+        let vectorDrawSequence = 0;
         const markerLayers = new Map();
+        const polylineLayers = new Map();
+        const polygonLayers = new Map();
+        const circleLayers = new Map();
+        const vectorLayerOrder = new Map();
 
         function getAndroidBridge() {
             return window[bridgeName];
@@ -69,6 +74,27 @@
             const androidBridge = getAndroidBridge();
             if (androidBridge && typeof androidBridge.onMarkerClick === "function") {
                 androidBridge.onMarkerClick(markerId);
+            }
+        }
+
+        function notifyPolylineClick(polylineId) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onPolylineClick === "function") {
+                androidBridge.onPolylineClick(polylineId);
+            }
+        }
+
+        function notifyPolygonClick(polygonId) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onPolygonClick === "function") {
+                androidBridge.onPolygonClick(polygonId);
+            }
+        }
+
+        function notifyCircleClick(circleId) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onCircleClick === "function") {
+                androidBridge.onCircleClick(circleId);
             }
         }
 
@@ -199,6 +225,244 @@
             return markerId;
         }
 
+        function toLeafletLatLng(point) {
+            return [Number(point.latitude), Number(point.longitude)];
+        }
+
+        function toLeafletPattern(pattern) {
+            if (!Array.isArray(pattern) || pattern.length === 0 || typeof L.Symbol === "undefined") {
+                return null;
+            }
+
+            const dashArray = pattern
+                .map(function (item) {
+                    if (item.type === "dash" || item.type === "gap") {
+                        return Number(item.length);
+                    }
+
+                    if (item.type === "dot") {
+                        return Number(item.radius || 1);
+                    }
+
+                    return null;
+                })
+                .filter(function (value) {
+                    return value !== null && !Number.isNaN(value);
+                });
+
+            return dashArray.length > 0 ? dashArray.join(" ") : null;
+        }
+
+        function bindShapeClick(layer, shapeId, notifyClick) {
+            layer.on("click", function () {
+                notifyClick(shapeId);
+            });
+        }
+
+        function nextVectorDrawSequence() {
+            vectorDrawSequence += 1;
+            return vectorDrawSequence;
+        }
+
+        function vectorLayerKey(type, id) {
+            return type + ":" + id;
+        }
+
+        function registerVectorLayer(type, id, layer, zIndex) {
+            const key = vectorLayerKey(type, id);
+            const existing = vectorLayerOrder.get(key);
+            vectorLayerOrder.set(key, {
+                layer: layer,
+                zIndex: Number(zIndex || 0),
+                drawSequence: existing ? existing.drawSequence : nextVectorDrawSequence()
+            });
+            reapplyVectorLayerOrder();
+        }
+
+        function unregisterVectorLayer(type, id) {
+            vectorLayerOrder.delete(vectorLayerKey(type, id));
+        }
+
+        function reapplyVectorLayerOrder() {
+            const orderedLayers = Array.from(vectorLayerOrder.values()).sort(function (left, right) {
+                if (left.zIndex !== right.zIndex) {
+                    return left.zIndex - right.zIndex;
+                }
+                return left.drawSequence - right.drawSequence;
+            });
+
+            orderedLayers.forEach(function (entry) {
+                if (entry.layer && typeof entry.layer.bringToFront === "function") {
+                    entry.layer.bringToFront();
+                }
+            });
+        }
+
+        function addPolylineLayer(polyline) {
+            const activeMap = ensureMap(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
+            const layer = L.polyline(
+                polyline.points.map(toLeafletLatLng),
+                {
+                    color: polyline.color,
+                    weight: Number(polyline.width),
+                    opacity: polyline.visible ? 1 : 0,
+                    dashArray: toLeafletPattern(polyline.pattern),
+                    interactive: Boolean(polyline.clickable)
+                }
+            ).addTo(activeMap);
+
+            bindShapeClick(layer, polyline.id, notifyPolylineClick);
+            polylineLayers.set(polyline.id, layer);
+            registerVectorLayer("polyline", polyline.id, layer, polyline.zIndex);
+        }
+
+        function updatePolylineLayer(polyline) {
+            const layer = polylineLayers.get(polyline.id);
+            if (!layer) {
+                addPolylineLayer(polyline);
+                return;
+            }
+
+            layer.setLatLngs(polyline.points.map(toLeafletLatLng));
+            layer.setStyle({
+                color: polyline.color,
+                weight: Number(polyline.width),
+                opacity: polyline.visible ? 1 : 0,
+                dashArray: toLeafletPattern(polyline.pattern),
+                interactive: Boolean(polyline.clickable)
+            });
+            registerVectorLayer("polyline", polyline.id, layer, polyline.zIndex);
+        }
+
+        function removePolylineLayer(polylineId) {
+            if (map === null) {
+                return;
+            }
+            const layer = polylineLayers.get(polylineId);
+            if (layer) {
+                map.removeLayer(layer);
+                polylineLayers.delete(polylineId);
+                unregisterVectorLayer("polyline", polylineId);
+            }
+        }
+
+        function addPolygonLayer(polygon) {
+            const activeMap = ensureMap(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
+            const polygonLatLngs = [polygon.points.map(toLeafletLatLng)].concat(
+                polygon.holes.map(function (hole) {
+                    return hole.map(toLeafletLatLng);
+                })
+            );
+            const layer = L.polygon(
+                polygonLatLngs,
+                {
+                    color: polygon.strokeColor,
+                    fillColor: polygon.fillColor,
+                    weight: Number(polygon.strokeWidth),
+                    opacity: polygon.visible ? 1 : 0,
+                    fillOpacity: polygon.visible ? 1 : 0,
+                    dashArray: toLeafletPattern(polygon.strokePattern),
+                    interactive: Boolean(polygon.clickable)
+                }
+            ).addTo(activeMap);
+
+            bindShapeClick(layer, polygon.id, notifyPolygonClick);
+            polygonLayers.set(polygon.id, layer);
+            registerVectorLayer("polygon", polygon.id, layer, polygon.zIndex);
+        }
+
+        function updatePolygonLayer(polygon) {
+            const layer = polygonLayers.get(polygon.id);
+            if (!layer) {
+                addPolygonLayer(polygon);
+                return;
+            }
+
+            const polygonLatLngs = [polygon.points.map(toLeafletLatLng)].concat(
+                polygon.holes.map(function (hole) {
+                    return hole.map(toLeafletLatLng);
+                })
+            );
+
+            layer.setLatLngs(polygonLatLngs);
+            layer.setStyle({
+                color: polygon.strokeColor,
+                fillColor: polygon.fillColor,
+                weight: Number(polygon.strokeWidth),
+                opacity: polygon.visible ? 1 : 0,
+                fillOpacity: polygon.visible ? 1 : 0,
+                dashArray: toLeafletPattern(polygon.strokePattern),
+                interactive: Boolean(polygon.clickable)
+            });
+            registerVectorLayer("polygon", polygon.id, layer, polygon.zIndex);
+        }
+
+        function removePolygonLayer(polygonId) {
+            if (map === null) {
+                return;
+            }
+            const layer = polygonLayers.get(polygonId);
+            if (layer) {
+                map.removeLayer(layer);
+                polygonLayers.delete(polygonId);
+                unregisterVectorLayer("polygon", polygonId);
+            }
+        }
+
+        function addCircleLayer(circle) {
+            const activeMap = ensureMap(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
+            const layer = L.circle(
+                toLeafletLatLng(circle.center),
+                {
+                    radius: Number(circle.radiusMeters),
+                    color: circle.strokeColor,
+                    fillColor: circle.fillColor,
+                    weight: Number(circle.strokeWidth),
+                    opacity: circle.visible ? 1 : 0,
+                    fillOpacity: circle.visible ? 1 : 0,
+                    dashArray: toLeafletPattern(circle.strokePattern),
+                    interactive: Boolean(circle.clickable)
+                }
+            ).addTo(activeMap);
+
+            bindShapeClick(layer, circle.id, notifyCircleClick);
+            circleLayers.set(circle.id, layer);
+            registerVectorLayer("circle", circle.id, layer, circle.zIndex);
+        }
+
+        function updateCircleLayer(circle) {
+            const layer = circleLayers.get(circle.id);
+            if (!layer) {
+                addCircleLayer(circle);
+                return;
+            }
+
+            layer.setLatLng(toLeafletLatLng(circle.center));
+            layer.setRadius(Number(circle.radiusMeters));
+            layer.setStyle({
+                color: circle.strokeColor,
+                fillColor: circle.fillColor,
+                weight: Number(circle.strokeWidth),
+                opacity: circle.visible ? 1 : 0,
+                fillOpacity: circle.visible ? 1 : 0,
+                dashArray: toLeafletPattern(circle.strokePattern),
+                interactive: Boolean(circle.clickable)
+            });
+            registerVectorLayer("circle", circle.id, layer, circle.zIndex);
+        }
+
+        function removeCircleLayer(circleId) {
+            if (map === null) {
+                return;
+            }
+            const layer = circleLayers.get(circleId);
+            if (layer) {
+                map.removeLayer(layer);
+                circleLayers.delete(circleId);
+                unregisterVectorLayer("circle", circleId);
+            }
+        }
+
         window.LeaflektBridge = {
             initMap: function (lat, lng, zoom) {
                 ensureMap(lat, lng, zoom);
@@ -300,6 +564,53 @@
                     map.removeLayer(markerLayer);
                 });
                 markerLayers.clear();
+            },
+            addPolyline: function (polyline) {
+                if (!polyline || !polyline.id || !Array.isArray(polyline.points) || polyline.points.length === 0) {
+                    return;
+                }
+                addPolylineLayer(polyline);
+            },
+            updatePolyline: function (polyline) {
+                if (!polyline || !polyline.id || !Array.isArray(polyline.points) || polyline.points.length === 0) {
+                    return;
+                }
+                updatePolylineLayer(polyline);
+            },
+            removePolyline: function (polylineId) {
+                removePolylineLayer(polylineId);
+            },
+            addPolygon: function (polygon) {
+                if (!polygon || !polygon.id || !Array.isArray(polygon.points) || polygon.points.length < 3) {
+                    return;
+                }
+                polygon.holes = Array.isArray(polygon.holes) ? polygon.holes : [];
+                addPolygonLayer(polygon);
+            },
+            updatePolygon: function (polygon) {
+                if (!polygon || !polygon.id || !Array.isArray(polygon.points) || polygon.points.length < 3) {
+                    return;
+                }
+                polygon.holes = Array.isArray(polygon.holes) ? polygon.holes : [];
+                updatePolygonLayer(polygon);
+            },
+            removePolygon: function (polygonId) {
+                removePolygonLayer(polygonId);
+            },
+            addCircle: function (circle) {
+                if (!circle || !circle.id || !circle.center) {
+                    return;
+                }
+                addCircleLayer(circle);
+            },
+            updateCircle: function (circle) {
+                if (!circle || !circle.id || !circle.center) {
+                    return;
+                }
+                updateCircleLayer(circle);
+            },
+            removeCircle: function (circleId) {
+                removeCircleLayer(circleId);
             }
         };
 
