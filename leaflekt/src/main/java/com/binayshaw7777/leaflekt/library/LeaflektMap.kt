@@ -85,6 +85,9 @@ internal val LocalLeaflektCameraPositionState = staticCompositionLocalOf { Leafl
  * @param onMapLoaded Callback invoked when the underlying Leaflet engine is fully initialized.
  * @param onReady Callback invoked when the [LeaflektController] is available for imperative calls.
  * @param onMapClick Callback invoked when the user taps on the map surface.
+ * @param onCameraMoveStarted Callback invoked when a pan/zoom motion session begins.
+ * @param onCameraMove Callback invoked while the map camera is actively changing.
+ * @param onCameraIdle Callback invoked after the map camera settles.
  * @param onMarkerClick Callback invoked when a marker layer is clicked.
  * @param content The content to be displayed on top of the map (usually [LeaflektMarker]s).
  */
@@ -98,6 +101,9 @@ fun LeaflektMap(
     onMapLoaded: (() -> Unit)? = null,
     onReady: ((LeaflektController) -> Unit)? = null,
     onMapClick: ((LeaflektLatLng) -> Unit)? = null,
+    onCameraMoveStarted: (() -> Unit)? = null,
+    onCameraMove: (() -> Unit)? = null,
+    onCameraIdle: (() -> Unit)? = null,
     onMarkerClick: ((String) -> Unit)? = null,
     content: @Composable @LeaflektMapComposable () -> Unit = {},
 ) {
@@ -107,7 +113,11 @@ fun LeaflektMap(
     val currentOnReady by rememberUpdatedState(onReady)
     val currentOnMapLoaded by rememberUpdatedState(onMapLoaded)
     val currentOnMapClick by rememberUpdatedState(onMapClick)
+    val currentOnCameraMoveStarted by rememberUpdatedState(onCameraMoveStarted)
+    val currentOnCameraMove by rememberUpdatedState(onCameraMove)
+    val currentOnCameraIdle by rememberUpdatedState(onCameraIdle)
     val currentOnMarkerClick by rememberUpdatedState(onMarkerClick)
+    val currentCameraPositionState by rememberUpdatedState(cameraPositionState)
 
     val jsBridge = remember {
         LeaflektJsBridge(
@@ -123,6 +133,33 @@ fun LeaflektMap(
                 currentOnMapClick?.invoke(
                     LeaflektLatLng(latitude = lat, longitude = lng)
                 )
+            },
+            onCameraMoveStarted = { lat, lng, zoom ->
+                currentCameraPositionState.onCameraMoveStarted(
+                    LeaflektCameraPosition(
+                        target = LeaflektLatLng(latitude = lat, longitude = lng),
+                        zoom = zoom
+                    )
+                )
+                currentOnCameraMoveStarted?.invoke()
+            },
+            onCameraMove = { lat, lng, zoom ->
+                currentCameraPositionState.onCameraMove(
+                    LeaflektCameraPosition(
+                        target = LeaflektLatLng(latitude = lat, longitude = lng),
+                        zoom = zoom
+                    )
+                )
+                currentOnCameraMove?.invoke()
+            },
+            onCameraIdle = { lat, lng, zoom ->
+                currentCameraPositionState.onCameraIdle(
+                    LeaflektCameraPosition(
+                        target = LeaflektLatLng(latitude = lat, longitude = lng),
+                        zoom = zoom
+                    )
+                )
+                currentOnCameraIdle?.invoke()
             },
             onMarkerClick = { markerId ->
                 controller.notifyMarkerClick(markerId)

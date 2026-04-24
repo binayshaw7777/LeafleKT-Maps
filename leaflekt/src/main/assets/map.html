@@ -45,6 +45,8 @@
         let activeZoomControl = null;
         let activeMapStyle = defaultMapStyle;
         let isZoomControlEnabled = true;
+        let isCameraMoving = false;
+        let cameraIdleHandle = null;
         let vectorDrawSequence = 0;
         const markerLayers = new Map();
         const polylineLayers = new Map();
@@ -67,6 +69,27 @@
             const androidBridge = getAndroidBridge();
             if (androidBridge && typeof androidBridge.onMapClick === "function") {
                 androidBridge.onMapClick(lat, lng);
+            }
+        }
+
+        function notifyCameraMoveStarted(lat, lng, zoom) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onCameraMoveStarted === "function") {
+                androidBridge.onCameraMoveStarted(lat, lng, zoom);
+            }
+        }
+
+        function notifyCameraMove(lat, lng, zoom) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onCameraMove === "function") {
+                androidBridge.onCameraMove(lat, lng, zoom);
+            }
+        }
+
+        function notifyCameraIdle(lat, lng, zoom) {
+            const androidBridge = getAndroidBridge();
+            if (androidBridge && typeof androidBridge.onCameraIdle === "function") {
+                androidBridge.onCameraIdle(lat, lng, zoom);
             }
         }
 
@@ -111,6 +134,7 @@
             map.on("click", function (event) {
                 notifyMapClick(event.latlng.lat, event.latlng.lng);
             });
+            bindCameraLifecycleCallbacks();
 
             applyIndiaBoundaryOverlayVisibility();
             retryInvalidateSize(20);
@@ -256,6 +280,80 @@
         function bindShapeClick(layer, shapeId, notifyClick) {
             layer.on("click", function () {
                 notifyClick(shapeId);
+            });
+        }
+
+        function cancelCameraIdleReport() {
+            if (cameraIdleHandle !== null) {
+                clearTimeout(cameraIdleHandle);
+                cameraIdleHandle = null;
+            }
+        }
+
+        function currentCameraSnapshot() {
+            if (map === null) {
+                return null;
+            }
+
+            const center = map.getCenter();
+            return {
+                lat: center.lat,
+                lng: center.lng,
+                zoom: map.getZoom()
+            };
+        }
+
+        function reportCameraMoveStarted() {
+            const snapshot = currentCameraSnapshot();
+            if (snapshot === null || isCameraMoving) {
+                return;
+            }
+
+            isCameraMoving = true;
+            notifyCameraMoveStarted(snapshot.lat, snapshot.lng, snapshot.zoom);
+        }
+
+        function reportCameraMove() {
+            const snapshot = currentCameraSnapshot();
+            if (snapshot === null) {
+                return;
+            }
+
+            reportCameraMoveStarted();
+            notifyCameraMove(snapshot.lat, snapshot.lng, snapshot.zoom);
+        }
+
+        function scheduleCameraIdleReport() {
+            cancelCameraIdleReport();
+            cameraIdleHandle = setTimeout(function () {
+                const snapshot = currentCameraSnapshot();
+                cameraIdleHandle = null;
+                if (snapshot === null) {
+                    return;
+                }
+
+                isCameraMoving = false;
+                notifyCameraIdle(snapshot.lat, snapshot.lng, snapshot.zoom);
+            }, 48);
+        }
+
+        function bindCameraLifecycleCallbacks() {
+            if (map === null) {
+                return;
+            }
+
+            map.on("movestart zoomstart", function () {
+                cancelCameraIdleReport();
+                reportCameraMoveStarted();
+            });
+
+            map.on("move zoom", function () {
+                cancelCameraIdleReport();
+                reportCameraMove();
+            });
+
+            map.on("moveend zoomend", function () {
+                scheduleCameraIdleReport();
             });
         }
 

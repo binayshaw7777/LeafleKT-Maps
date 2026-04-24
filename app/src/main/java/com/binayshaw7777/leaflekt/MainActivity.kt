@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,6 +87,11 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
     var isPolylineSelected by rememberSaveable { mutableStateOf(false) }
     var isPolygonSelected by rememberSaveable { mutableStateOf(false) }
     var isCircleSelected by rememberSaveable { mutableStateOf(false) }
+    var cameraMotionLabel by rememberSaveable { mutableStateOf("Camera idle") }
+    var lastCameraSnapshot by rememberSaveable {
+        mutableStateOf("22.57260, 88.36390 | z 12.0")
+    }
+    var isCameraMoving by rememberSaveable { mutableStateOf(false) }
 
     val cameraPositionState = rememberLeaflektCameraPositionState {
         position = LeaflektCameraPosition(
@@ -183,6 +189,21 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
                     activeFeatureLng = point.longitude
                     lastTap = "Pinned at %.5f, %.5f".format(point.latitude, point.longitude)
                 },
+                onCameraMoveStarted = {
+                    cameraMotionLabel = "Camera moving"
+                    lastCameraSnapshot = cameraPositionState.position.displayLabel()
+                    isCameraMoving = true
+                },
+                onCameraMove = {
+                    lastCameraSnapshot = cameraPositionState.position.displayLabel()
+                    isCameraMoving = true
+                },
+                onCameraIdle = {
+                    cameraMotionLabel = "Camera idle"
+                    selectedZoom = cameraPositionState.position.zoom.toFloat()
+                    lastCameraSnapshot = cameraPositionState.position.displayLabel()
+                    isCameraMoving = false
+                },
                 onMarkerClick = { markerId ->
                     lastMarkerId = markerId
                 }
@@ -202,92 +223,99 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
                     points = activeFeaturePoint.demoPolylinePoints(),
                     color = Color(0xFF1D3557),
                     width = 6f,
-                pattern = listOf(
-                    LeaflektStrokePattern.Dash(10f),
-                    LeaflektStrokePattern.Gap(8f)
-                ),
-                id = "demo-polyline",
-                visible = isPolylineVisible,
-                selected = isPolylineSelected,
-                onClick = {
-                    isPolylineSelected = true
-                    isPolygonSelected = false
-                    isCircleSelected = false
-                    lastTap = "Polyline click: demo-polyline"
-                }
-            )
+                    pattern = listOf(
+                        LeaflektStrokePattern.Dash(10f),
+                        LeaflektStrokePattern.Gap(8f)
+                    ),
+                    id = "demo-polyline",
+                    visible = isPolylineVisible,
+                    selected = isPolylineSelected,
+                    onClick = {
+                        isPolylineSelected = true
+                        isPolygonSelected = false
+                        isCircleSelected = false
+                        lastTap = "Polyline click: demo-polyline"
+                    }
+                )
 
                 LeaflektPolygon(
                     points = activeFeaturePoint.demoPolygonPoints(),
                     fillColor = Color(0xFF2A9D8F),
                     strokeColor = Color(0xFF264653),
-                strokeWidth = 4f,
-                fillOpacity = 0.25f,
-                id = "demo-polygon",
-                visible = isPolygonVisible,
-                selected = isPolygonSelected,
-                onClick = {
-                    isPolylineSelected = false
-                    isPolygonSelected = true
-                    isCircleSelected = false
-                    lastTap = "Polygon click: demo-polygon"
-                }
-            )
+                    strokeWidth = 4f,
+                    fillOpacity = 0.25f,
+                    id = "demo-polygon",
+                    visible = isPolygonVisible,
+                    selected = isPolygonSelected,
+                    onClick = {
+                        isPolylineSelected = false
+                        isPolygonSelected = true
+                        isCircleSelected = false
+                        lastTap = "Polygon click: demo-polygon"
+                    }
+                )
 
                 LeaflektCircle(
                     center = activeFeaturePoint,
                     radiusMeters = circleRadiusMeters.toDouble(),
                     fillColor = Color(0xFFF4A261),
                     strokeColor = Color(0xFFE76F51),
-                strokeWidth = 4f,
-                fillOpacity = 0.2f,
-                id = "demo-circle",
-                visible = isCircleVisible,
-                selected = isCircleSelected,
-                onClick = {
-                    isPolylineSelected = false
-                    isPolygonSelected = false
-                    isCircleSelected = true
-                    lastTap = "Circle click: demo-circle"
-                }
-            )
+                    strokeWidth = 4f,
+                    fillOpacity = 0.2f,
+                    id = "demo-circle",
+                    visible = isCircleVisible,
+                    selected = isCircleSelected,
+                    onClick = {
+                        isPolylineSelected = false
+                        isPolygonSelected = false
+                        isCircleSelected = true
+                        lastTap = "Circle click: demo-circle"
+                    }
+                )
             }
 
-            MapStatusCard(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                selectedMapStyle = selectedMapStyle,
-                activeFeatureCount = activeFeatureCount,
-                lastTap = lastTap,
-                lastMarkerId = lastMarkerId
-            )
+            AnimatedVisibility(!isCameraMoving, modifier = Modifier.align(Alignment.TopCenter)) {
+                MapStatusCard(
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    selectedMapStyle = selectedMapStyle,
+                    activeFeatureCount = activeFeatureCount,
+                    lastTap = lastTap,
+                    lastMarkerId = lastMarkerId,
+                    cameraMotionLabel = cameraMotionLabel,
+                    lastCameraSnapshot = lastCameraSnapshot
+                )
+            }
 
-            MapQuickActions(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(end = 16.dp, bottom = 248.dp),
-                onShowAll = {
-                    isMarkerVisible = true
-                    isPolylineVisible = true
-                    isPolygonVisible = true
-                    isCircleVisible = true
-                },
-                onHideAll = {
-                    isMarkerVisible = false
-                    isPolylineVisible = false
-                    isPolygonVisible = false
-                    isCircleVisible = false
-                },
-                onFocusSelected = {
-                    cameraPositionState.move(
-                        target = activeFeaturePoint,
-                        zoom = selectedZoom.toDouble()
-                    )
-                }
-            )
+
+            AnimatedVisibility(!isCameraMoving, modifier = Modifier.align(Alignment.BottomEnd)) {
+
+                MapQuickActions(
+                    modifier = Modifier
+//                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(end = 16.dp, bottom = 248.dp),
+                    onShowAll = {
+                        isMarkerVisible = true
+                        isPolylineVisible = true
+                        isPolygonVisible = true
+                        isCircleVisible = true
+                    },
+                    onHideAll = {
+                        isMarkerVisible = false
+                        isPolylineVisible = false
+                        isPolygonVisible = false
+                        isCircleVisible = false
+                    },
+                    onFocusSelected = {
+                        cameraPositionState.move(
+                            target = activeFeaturePoint,
+                            zoom = selectedZoom.toDouble()
+                        )
+                    }
+                )
+            }
         }
     }
 }
@@ -298,7 +326,9 @@ private fun MapStatusCard(
     selectedMapStyle: LeaflektMapStyle,
     activeFeatureCount: Int,
     lastTap: String,
-    lastMarkerId: String
+    lastMarkerId: String,
+    cameraMotionLabel: String,
+    lastCameraSnapshot: String
 ) {
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
@@ -313,16 +343,26 @@ private fun MapStatusCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
+//            Text(
+//                text = "${selectedMapStyle.displayName()} | $activeFeatureCount layers visible",
+//                style = MaterialTheme.typography.labelMedium,
+//                color = MaterialTheme.colorScheme.primary
+//            )
             Text(
-                text = "${selectedMapStyle.displayName()} | $activeFeatureCount layers visible",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
+                text = "$cameraMotionLabel | $lastCameraSnapshot",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = lastTap,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+//            Text(
+//                text = "Last marker: $lastMarkerId",
+//                style = MaterialTheme.typography.bodySmall,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
         }
     }
 }
@@ -579,6 +619,14 @@ private fun LeaflektLatLng.demoPolygonPoints(): List<LeaflektLatLng> {
         LeaflektLatLng(latitude + 0.04, longitude),
         LeaflektLatLng(latitude + 0.01, longitude + 0.03),
         LeaflektLatLng(latitude - 0.02, longitude)
+    )
+}
+
+private fun LeaflektCameraPosition.displayLabel(): String {
+    return "%.5f, %.5f | z %.1f".format(
+        target.latitude,
+        target.longitude,
+        zoom
     )
 }
 
