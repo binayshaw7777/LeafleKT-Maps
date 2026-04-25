@@ -12,7 +12,7 @@ internal class JsExecutor(
             runCatching {
                 webView.evaluateJavascript(script, null)
             }.onFailure { error ->
-                Log.e(TAG, "Leaflet JS execution failed", error)
+                Log.e(TAG, "Leaflekt JS execution failed", error)
             }
         }
     }

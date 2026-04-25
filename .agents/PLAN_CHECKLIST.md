@@ -5,141 +5,49 @@
 - [x] Data flow wired: Compose -> Controller -> WebView -> JS Bridge -> Leaflet
 - [x] Reverse callbacks wired: Leaflet -> JS Bridge -> Kotlin callbacks -> Compose state
 
-## Day 1 MVP Phases
+## Refinement & Optimization (Session 0.3.0)
+- [x] **Asset Optimization:** India boundary GeoJSON reduced from 6.6 MB to 313 KB (5% simplification).
+- [x] **Branding Refactor:** All internal symbols migrated from `Leaflet*` to `Leaflekt*`.
+- [x] **State Management:** 1:1 Google Maps Compose pattern implemented (`LeaflektCameraPositionState`).
+- [x] **Declarative Markers:** Implemented child-based `LeaflektMarker` API with hoisted state support.
+- [x] **Security:** Safe Browsing enabled; attribution links intercepted and redirected to system browser.
+- [x] **Documentation:** Dokka integrated; all public functions include code snippets in KDocs.
+- [x] **Automation:** CI/CD pipeline wired with README auto-versioning and clean semantic tagging.
 
-### Phase 0 - Repo Setup
-- [x] Repo name is `LeafleKT`
-- [ ] Public GitHub repo
-- [ ] Default branch `master`
-- [x] Add `README.md`
-
-### Phase 1 - Android Library Setup
-- [x] New module created: `:leaflekt` (Android Library)
-- [x] minSdk >= 21
-- [x] compileSdk latest in project
-- [x] Compose enabled
-- [x] Compose UI dependency added
-- [x] Lifecycle runtime dependency added
-
-### Phase 2 - WebView Base
-- [x] `LeafletWebView.kt` created
-- [x] AndroidView wrapper added
-- [x] WebView settings: JavaScript enabled
-- [x] WebView settings: DOM storage enabled
-- [x] WebView settings: file access enabled
-- [x] WebView settings: loadWithOverviewMode enabled
-- [x] Web contents debugging enabled
-
-### Phase 3 - HTML Engine
-- [x] `leaflekt/src/main/assets/map.html` created
-- [x] Leaflet CSS bundled locally
-- [x] Leaflet JS bundled locally
-- [x] Fullscreen map div + no margins
-- [x] JS map initialization
-- [x] Default center and zoom
-- [x] OpenStreetMap tile layer with visible attribution
-
-### Phase 4 - JS API
-- [x] `window.LeafletBridge.initMap(lat, lng, zoom)`
-- [x] `window.LeafletBridge.addMarker(lat, lng, title)`
-- [x] `window.LeafletBridge.addMarkers(list)`
-- [x] `window.LeafletBridge.moveCamera(lat, lng, zoom)`
-- [x] `window.LeafletBridge.clearMarkers()`
-- [x] Internal map reference maintained
-- [x] Internal marker collection maintained
-
-### Phase 5 - Kotlin Bridge
-- [x] `LeafletJsBridge.kt` created
-- [x] `@JavascriptInterface` bridge methods added
-- [x] `onMapReady()` implemented
-- [x] `onMarkerClick(id)` implemented
-- [x] `onMapClick(lat, lng)` implemented
-
-### Phase 6 - Kotlin to JS Executor
-- [x] `JsExecutor.kt` created
-- [x] `runJS(script: String)` implemented
-- [x] safe execution wrapper with error handling
-
-### Phase 7 - Controller Layer
-- [x] `LeafletController.kt` created
-- [x] Holds WebView reference
-- [x] Exposes API methods
-- [x] `setCenter()` implemented
-- [x] `addMarker()` implemented
-- [x] `addMarkers()` implemented
-- [x] `clearMarkers()` implemented
-
-### Phase 8 - Compose API
-- [x] `LeafletMap.kt` created
-- [x] Composable API implemented
-- [x] Controller provided through `onReady`
-- [x] Map click callback exposed
-- [x] Marker click callback exposed
-
-### Phase 9 - Data Models
-- [x] `Marker.kt` created
-- [x] Marker model fields aligned with plan
-
-### Phase 10 - Testing
-- [x] Map loads (manual runtime)
-- [x] Marker added (manual runtime)
-- [x] Multiple markers (manual runtime)
-- [x] Camera moves (manual runtime)
-- [x] No crashes (manual runtime)
-- [x] Unit test added for marker-to-JS payload generation
-- [x] `:leaflekt:testDebugUnitTest` passes
-- [x] `:app:assembleDebug` passes
-
-### Phase 11 - Documentation
-- [x] README added
-- [x] Usage example added
-- [x] Attribution note added
-- [x] Public API KDocs added
+## Day 1 MVP Phases (Updated)
 
 ### Phase 12 - Deployment
-- [x] JitPack-ready `maven-publish` configuration
-- [x] JitPack Java runtime pinned with `jitpack.yml`
-- [x] Release automation workflow added for `master`
-- [ ] Push code
-- [ ] Create tag `v0.1.0`
-- [ ] Verify JitPack build
+- [x] Push code to master branch
+- [x] Create automated tag `0.1.0` (v-prefix removed)
+- [x] Verify JitPack build
+- [x] Restore WebViewAssetLoader functionality
 
 ### Phase 13 - Launch
+- [x] Refactor: Rename `LeafletMap` and internal wrapper symbols to `LeaflektMap` for brand consistency.
+- [x] Implement binary-compatible UI Settings.
 - [ ] Record demo
 - [ ] LinkedIn post
 
-## Week Plan
+## Future Scope 🚀
 
-### Week 1
-- [x] Zoom controls (demo app)
-- [x] Marker click callbacks
-- [x] Built-in tile style switching
-- [x] Always-on India boundary overlay
-- [x] India boundary overlay backed by optimized GeoJSON asset
-- [x] India boundary overlay reacts to active map style
-- [ ] Polylines
-- [ ] Polygons
-- [ ] Circles
+### Phase 14 - Advanced Overlays
+- [ ] Polylines implementation
+- [ ] Polygons implementation
+- [ ] Circles implementation
+- [ ] Advanced Clustering plugin integration
 
-### Week 2
-- [ ] Clustering plugin
-- [ ] GeoJSON
-- [ ] Tile switching
-- [ ] Custom styles
-
-### Week 3
-- [ ] Custom markers
-- [ ] Tooltips
-- [ ] Event system
-- [ ] Performance optimizations
+### Phase 15 - Core Infrastructure
+- [ ] **JNI Layer Migration:** Research migrating the bridge from JS-based to a native JNI layer for improved performance and direct engine access.
+- [ ] Offline Tile caching system
+- [ ] Custom Icon support (Bitmaps/Drawables)
 
 ## Success Criteria
 - [x] Map loads in Compose
-- [x] Marker API implemented
-- [ ] JitPack dependency verified
+- [x] 1:1 Google-style Marker API implemented
+- [x] JitPack dependency verified (v0.1.0)
 - [x] Dev integration path documented (<5 min local module integration)
 
 ## Tracking Notes
 - Keep `:leaflekt` reusable and independent from `:app`
 - `:app` remains a demo/sample surface with runtime tuning controls
-- Last updated: 2026-04-18
+- Last updated: 2026-04-19
