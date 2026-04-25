@@ -1,0 +1,41 @@
+package com.binayshaw7777.leaflekt.library
+
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class LeaflektShapeStateTest {
+
+    @Test
+    fun polylineStateToggleSelectionUpdatesSelectionFlag() {
+        val state = LeaflektPolylineState()
+
+        assertFalse(state.isSelected)
+
+        state.toggleSelection()
+        assertTrue(state.isSelected)
+
+        state.deselect()
+        assertFalse(state.isSelected)
+    }
+
+    @Test
+    fun polygonStateSelectUpdatesSelectionFlag() {
+        val state = LeaflektPolygonState()
+
+        state.select()
+
+        assertTrue(state.isSelected)
+    }
+
+    @Test
+    fun circleStateToggleSelectionUpdatesSelectionFlag() {
+        val state = LeaflektCircleState()
+
+        state.toggleSelection()
+        assertTrue(state.isSelected)
+
+        state.toggleSelection()
+        assertFalse(state.isSelected)
+    }
+}

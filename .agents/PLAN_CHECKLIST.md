@@ -31,9 +31,9 @@
 ## Future Scope 🚀
 
 ### Phase 14 - Advanced Overlays
-- [ ] Polylines implementation
-- [ ] Polygons implementation
-- [ ] Circles implementation
+- [x] Polylines implementation
+- [x] Polygons implementation
+- [x] Circles implementation
 - [ ] Advanced Clustering plugin integration
 
 ### Phase 15 - Core Infrastructure
