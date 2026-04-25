@@ -9,6 +9,11 @@ import java.util.concurrent.ConcurrentLinkedQueue
 class LeaflektController internal constructor() {
     private var webView: WebView? = null
     private val pendingScripts = ConcurrentLinkedQueue<String>()
+    private val markerClickHandlers = mutableMapOf<String, () -> Boolean>()
+    private val polylineClickHandlers = mutableMapOf<String, () -> Unit>()
+    private val polygonClickHandlers = mutableMapOf<String, () -> Unit>()
+    private val circleClickHandlers = mutableMapOf<String, () -> Unit>()
+    private var currentLocationCenteringAction: ((Double) -> Unit)? = null
     private var isMapReady = false
 
     internal fun setWebView(view: WebView?) {
@@ -42,6 +47,20 @@ class LeaflektController internal constructor() {
         enqueueOrRun(LeaflektScriptBuilder.setMapStyleScript(style))
     }
 
+    fun centerOnCurrentLocation(zoom: Double = 16.0) {
+        currentLocationCenteringAction?.invoke(zoom)
+    }
+
+    /**
+     * Executes raw JavaScript against the managed Leaflet runtime.
+     *
+     * This is an extensibility escape hatch for features that are not yet wrapped by the public
+     * Compose API. Scripts issued before the map is ready are queued and replayed after startup.
+     */
+    fun executeJavaScript(script: String) {
+        enqueueOrRun(script)
+    }
+
     internal fun addMarker(marker: LeaflektMarkerInfo) {
         enqueueOrRun(LeaflektScriptBuilder.addMarkersScript(listOf(marker)))
     }
@@ -62,6 +81,74 @@ class LeaflektController internal constructor() {
         enqueueOrRun(LeaflektScriptBuilder.clearMarkersScript())
     }
 
+    internal fun registerMarkerClick(markerId: String, onClick: () -> Boolean) {
+        markerClickHandlers[markerId] = onClick
+    }
+
+    internal fun unregisterMarkerClick(markerId: String) {
+        markerClickHandlers.remove(markerId)
+    }
+
+    internal fun addPolyline(polyline: LeaflektPolylineInfo) {
+        enqueueOrRun(LeaflektScriptBuilder.addPolylineScript(polyline))
+    }
+
+    internal fun updatePolyline(polyline: LeaflektPolylineInfo) {
+        enqueueOrRun(LeaflektScriptBuilder.updatePolylineScript(polyline))
+    }
+
+    fun removePolyline(polylineId: String) {
+        enqueueOrRun(LeaflektScriptBuilder.removePolylineScript(polylineId))
+    }
+
+    internal fun registerPolylineClick(polylineId: String, onClick: () -> Unit) {
+        polylineClickHandlers[polylineId] = onClick
+    }
+
+    internal fun unregisterPolylineClick(polylineId: String) {
+        polylineClickHandlers.remove(polylineId)
+    }
+
+    internal fun addPolygon(polygon: LeaflektPolygonInfo) {
+        enqueueOrRun(LeaflektScriptBuilder.addPolygonScript(polygon))
+    }
+
+    internal fun updatePolygon(polygon: LeaflektPolygonInfo) {
+        enqueueOrRun(LeaflektScriptBuilder.updatePolygonScript(polygon))
+    }
+
+    fun removePolygon(polygonId: String) {
+        enqueueOrRun(LeaflektScriptBuilder.removePolygonScript(polygonId))
+    }
+
+    internal fun registerPolygonClick(polygonId: String, onClick: () -> Unit) {
+        polygonClickHandlers[polygonId] = onClick
+    }
+
+    internal fun unregisterPolygonClick(polygonId: String) {
+        polygonClickHandlers.remove(polygonId)
+    }
+
+    internal fun addCircle(circle: LeaflektCircleInfo) {
+        enqueueOrRun(LeaflektScriptBuilder.addCircleScript(circle))
+    }
+
+    internal fun updateCircle(circle: LeaflektCircleInfo) {
+        enqueueOrRun(LeaflektScriptBuilder.updateCircleScript(circle))
+    }
+
+    fun removeCircle(circleId: String) {
+        enqueueOrRun(LeaflektScriptBuilder.removeCircleScript(circleId))
+    }
+
+    internal fun registerCircleClick(circleId: String, onClick: () -> Unit) {
+        circleClickHandlers[circleId] = onClick
+    }
+
+    internal fun unregisterCircleClick(circleId: String) {
+        circleClickHandlers.remove(circleId)
+    }
+
     internal fun initializeMap(
         initialLat: Double,
         initialLng: Double,
@@ -72,6 +159,14 @@ class LeaflektController internal constructor() {
         enqueueOrRun(LeaflektScriptBuilder.initMapScript(initialLat, initialLng, initialZoom))
         enqueueOrRun(LeaflektScriptBuilder.setZoomControlsEnabledScript(isZoomControlEnabled))
         enqueueOrRun(LeaflektScriptBuilder.setMapStyleScript(initialMapStyle))
+    }
+
+    internal fun registerCurrentLocationCenteringAction(action: (Double) -> Unit) {
+        currentLocationCenteringAction = action
+    }
+
+    internal fun unregisterCurrentLocationCenteringAction() {
+        currentLocationCenteringAction = null
     }
 
     private fun enqueueOrRun(script: String) {
@@ -86,5 +181,21 @@ class LeaflektController internal constructor() {
         webView?.post {
             webView?.evaluateJavascript(script, null)
         }
+    }
+
+    internal fun notifyMarkerClick(markerId: String): Boolean {
+        return markerClickHandlers[markerId]?.invoke() ?: false
+    }
+
+    internal fun notifyPolylineClick(polylineId: String) {
+        polylineClickHandlers[polylineId]?.invoke()
+    }
+
+    internal fun notifyPolygonClick(polygonId: String) {
+        polygonClickHandlers[polygonId]?.invoke()
+    }
+
+    internal fun notifyCircleClick(circleId: String) {
+        circleClickHandlers[circleId]?.invoke()
     }
 }

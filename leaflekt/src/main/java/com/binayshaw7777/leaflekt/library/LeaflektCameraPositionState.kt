@@ -126,6 +126,21 @@ class LeaflektCameraPositionState(
         this.position = LeaflektCameraPosition(target, zoom)
     }
 
+    internal fun onCameraMoveStarted(position: LeaflektCameraPosition) {
+        rawPosition = position
+        isMoving = true
+    }
+
+    internal fun onCameraMove(position: LeaflektCameraPosition) {
+        rawPosition = position
+        isMoving = true
+    }
+
+    internal fun onCameraIdle(position: LeaflektCameraPosition) {
+        rawPosition = position
+        isMoving = false
+    }
+
     companion object {
         /**
          * The default saver implementation for [LeaflektCameraPositionState].

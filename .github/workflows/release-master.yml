@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: release-master
@@ -45,7 +43,7 @@ jobs:
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.value }}"
-          sed -i "s/LeafleKT-Maps:[0-9]\+\.[0-9]\+\.[0-9]\+/LeafleKT-Maps:$VERSION/g" README.md
+          sed -i "s/com.github.binayshaw7777.LeafleKT:leaflekt:[0-9]\+\.[0-9]\+\.[0-9]\+/com.github.binayshaw7777.LeafleKT:leaflekt:$VERSION/g" README.md
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md

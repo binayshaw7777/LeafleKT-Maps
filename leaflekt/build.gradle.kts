@@ -65,10 +65,14 @@ group = pomGroupId
 version = releaseVersion
 
 dependencies {
+    implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.webkit)
+    implementation(libs.google.play.services.location)
 
     testImplementation(libs.junit)
 }
