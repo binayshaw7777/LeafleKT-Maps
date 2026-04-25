@@ -85,6 +85,18 @@ internal object LeaflektScriptBuilder {
     }
 
     private fun LeaflektMarkerInfo.toJson(): String {
+        val iconJson = icon?.let {
+            """
+                {
+                    "dataUrl": ${LeaflektMapJson.encodeString(it.dataUrl)},
+                    "widthPx": ${it.widthPx},
+                    "heightPx": ${it.heightPx},
+                    "anchorFractionX": ${it.anchorFractionX},
+                    "anchorFractionY": ${it.anchorFractionY}
+                }
+            """.trimIndent()
+        } ?: "null"
+
         return """
             {
                 "id": ${LeaflektMapJson.encodeString(id ?: "")},
@@ -93,7 +105,8 @@ internal object LeaflektScriptBuilder {
                 "title": ${LeaflektMapJson.encodeNullableString(title)},
                 "snippet": ${LeaflektMapJson.encodeNullableString(snippet)},
                 "visible": $visible,
-                "alpha": $alpha
+                "alpha": $alpha,
+                "icon": $iconJson
             }
         """.trimIndent()
     }

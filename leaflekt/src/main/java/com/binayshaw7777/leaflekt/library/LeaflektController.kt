@@ -13,6 +13,7 @@ class LeaflektController internal constructor() {
     private val polylineClickHandlers = mutableMapOf<String, () -> Unit>()
     private val polygonClickHandlers = mutableMapOf<String, () -> Unit>()
     private val circleClickHandlers = mutableMapOf<String, () -> Unit>()
+    private var currentLocationCenteringAction: ((Double) -> Unit)? = null
     private var isMapReady = false
 
     internal fun setWebView(view: WebView?) {
@@ -44,6 +45,10 @@ class LeaflektController internal constructor() {
 
     fun setMapStyle(style: LeaflektMapStyle) {
         enqueueOrRun(LeaflektScriptBuilder.setMapStyleScript(style))
+    }
+
+    fun centerOnCurrentLocation(zoom: Double = 16.0) {
+        currentLocationCenteringAction?.invoke(zoom)
     }
 
     /**
@@ -154,6 +159,14 @@ class LeaflektController internal constructor() {
         enqueueOrRun(LeaflektScriptBuilder.initMapScript(initialLat, initialLng, initialZoom))
         enqueueOrRun(LeaflektScriptBuilder.setZoomControlsEnabledScript(isZoomControlEnabled))
         enqueueOrRun(LeaflektScriptBuilder.setMapStyleScript(initialMapStyle))
+    }
+
+    internal fun registerCurrentLocationCenteringAction(action: (Double) -> Unit) {
+        currentLocationCenteringAction = action
+    }
+
+    internal fun unregisterCurrentLocationCenteringAction() {
+        currentLocationCenteringAction = null
     }
 
     private fun enqueueOrRun(script: String) {

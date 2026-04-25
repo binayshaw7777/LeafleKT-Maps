@@ -17,14 +17,17 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.LocationSearching
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -33,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +50,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.binayshaw7777.leaflekt.library.LeaflektCameraPosition
 import com.binayshaw7777.leaflekt.library.LeaflektCircle
+import com.binayshaw7777.leaflekt.library.LeaflektController
 import com.binayshaw7777.leaflekt.library.LeaflektLatLng
 import com.binayshaw7777.leaflekt.library.LeaflektMap
 import com.binayshaw7777.leaflekt.library.LeaflektMapProperties
@@ -92,6 +97,9 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
         mutableStateOf("22.57260, 88.36390 | z 12.0")
     }
     var isCameraMoving by rememberSaveable { mutableStateOf(false) }
+    var mapController by remember {
+        mutableStateOf<LeaflektController?>(null)
+    }
 
     val cameraPositionState = rememberLeaflektCameraPositionState {
         position = LeaflektCameraPosition(
@@ -101,7 +109,10 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
     }
     val sheetState = rememberBottomSheetScaffoldState()
     val mapProperties = LeaflektMapProperties(mapStyle = selectedMapStyle)
-    val mapUiSettings = LeaflektMapUiSettings(zoomControlsEnabled = false)
+    val mapUiSettings = LeaflektMapUiSettings(
+        zoomControlsEnabled = false,
+        showCurrentLocation = true
+    )
     val activeFeaturePoint = LeaflektLatLng(activeFeatureLat, activeFeatureLng)
     val activeFeatureCount = visibleFeatureCount(
         isMarkerVisible = isMarkerVisible,
@@ -184,6 +195,9 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
                 contentDescription = "LeafleKT demo map app",
                 properties = mapProperties,
                 uiSettings = mapUiSettings,
+                onReady = { controller ->
+                    mapController = controller
+                },
                 onMapClick = { point ->
                     activeFeatureLat = point.latitude
                     activeFeatureLng = point.longitude
@@ -290,10 +304,8 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
 
 
             AnimatedVisibility(!isCameraMoving, modifier = Modifier.align(Alignment.BottomEnd)) {
-
                 MapQuickActions(
                     modifier = Modifier
-//                        .align(Alignment.BottomEnd)
                         .navigationBarsPadding()
                         .padding(end = 16.dp, bottom = 248.dp),
                     onShowAll = {
@@ -316,6 +328,18 @@ private fun LeaflektDemoScreen(modifier: Modifier = Modifier) {
                     }
                 )
             }
+
+            CurrentLocationFab(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 16.dp, bottom = 176.dp),
+                onClick = {
+                    mapController?.centerOnCurrentLocation(
+                        zoom = selectedZoom.toDouble().coerceAtLeast(16.0)
+                    )
+                }
+            )
         }
     }
 }
@@ -339,15 +363,10 @@ private fun MapStatusCard(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "LeafleKT Client Playground",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                text = "${selectedMapStyle.displayName()} | $activeFeatureCount layers visible",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
             )
-//            Text(
-//                text = "${selectedMapStyle.displayName()} | $activeFeatureCount layers visible",
-//                style = MaterialTheme.typography.labelMedium,
-//                color = MaterialTheme.colorScheme.primary
-//            )
             Text(
                 text = "$cameraMotionLabel | $lastCameraSnapshot",
                 style = MaterialTheme.typography.bodySmall,
@@ -358,11 +377,11 @@ private fun MapStatusCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-//            Text(
-//                text = "Last marker: $lastMarkerId",
-//                style = MaterialTheme.typography.bodySmall,
-//                color = MaterialTheme.colorScheme.onSurfaceVariant
-//            )
+            Text(
+                text = "Last marker: $lastMarkerId",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -571,6 +590,24 @@ private fun FeatureToggleChip(
         onClick = onClick,
         label = { Text(label) }
     )
+}
+
+@Composable
+private fun CurrentLocationFab(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    FloatingActionButton(
+        modifier = modifier,
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.LocationSearching,
+            contentDescription = "Current location"
+        )
+    }
 }
 
 @Preview(showBackground = true)

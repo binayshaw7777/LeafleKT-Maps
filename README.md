@@ -159,6 +159,34 @@ LeaflektMap(
 }
 ```
 
+Current location example:
+
+```kotlin
+LeaflektMap(
+    modifier = Modifier.fillMaxSize(),
+    uiSettings = LeaflektMapUiSettings(
+        showCurrentLocation = true
+    )
+)
+```
+
+Custom current location icon:
+
+```kotlin
+LeaflektMap(
+    uiSettings = LeaflektMapUiSettings(
+        showCurrentLocation = true,
+        currentLocationIcon = LeaflektCurrentLocationIcon(
+            bitmap = myLocationBitmap,
+            widthPx = 36,
+            heightPx = 36,
+            anchorFractionX = 0.5f,
+            anchorFractionY = 0.5f
+        )
+    )
+)
+```
+
 Camera lifecycle example:
 
 ```kotlin
@@ -199,6 +227,7 @@ fun CameraAwareMap() {
 
 - The India boundary overlay is always enabled and reacts to the active map style.
 - Camera lifecycle callbacks are bridged from Leaflet `movestart` / `move` / `moveend` and `zoomstart` / `zoom` / `zoomend`, and user gestures sync back into `LeaflektCameraPositionState`.
+- `showCurrentLocation = true` requests Android location permission when needed and renders a default blue dot with pulse and accuracy ring, or a custom bitmap marker when `currentLocationIcon` is provided.
 - `geodesic` is accepted for API familiarity on polylines and polygons, but Leaflet core does not provide Google Maps style geodesic rendering. It is retained as a compatibility field and currently renders as a normal projected path.
 - Stroke patterns are mapped to Leaflet `dashArray`, so they are approximate rather than 1:1 with Google Maps SDK pattern items.
 - Vector layer draw order is best-effort. LeafleKT reapplies polyline, polygon, and circle order by `zIndex`, then insertion order, but Leaflet does not expose a Google Maps style path `zIndex` contract.
@@ -253,11 +282,12 @@ Implemented:
 - [x] `MapEffect` for imperative map extensions via `LeaflektController`
 - [x] Camera move started / moving / idle callbacks
 - [x] Camera position sync from user gestures back into `LeaflektCameraPositionState`
+- [x] SDK current location overlay with boolean toggle and optional custom icon
 
 Planned:
 
 - [ ] GeoJSON layer API
-- [ ] Custom marker bitmaps and drawables
+- [ ] General custom marker bitmaps and drawables
 - [ ] HTML/divIcon markers
 - [ ] Custom info windows
 - [ ] Tile source customization API

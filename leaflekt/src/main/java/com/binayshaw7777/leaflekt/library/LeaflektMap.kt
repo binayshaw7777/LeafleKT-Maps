@@ -224,6 +224,7 @@ fun LeaflektMap(
             LocalLeaflektController provides controller,
             LocalLeaflektCameraPositionState provides cameraPositionState
         ) {
+            LeaflektCurrentLocationOverlay(uiSettings = uiSettings)
             content()
         }
     }

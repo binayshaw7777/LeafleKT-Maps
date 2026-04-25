@@ -232,10 +232,33 @@
             return "marker-" + Date.now() + "-" + Math.floor(Math.random() * 100000);
         }
 
+        function createMarkerIcon(marker) {
+            if (!marker || !marker.icon || !marker.icon.dataUrl) {
+                return new L.Icon.Default();
+            }
+
+            const iconWidth = Number(marker.icon.widthPx || 0);
+            const iconHeight = Number(marker.icon.heightPx || 0);
+            const anchorFractionX = Number(marker.icon.anchorFractionX ?? 0.5);
+            const anchorFractionY = Number(marker.icon.anchorFractionY ?? 0.5);
+
+            return L.icon({
+                iconUrl: marker.icon.dataUrl,
+                iconSize: [iconWidth, iconHeight],
+                iconAnchor: [
+                    iconWidth * anchorFractionX,
+                    iconHeight * anchorFractionY
+                ]
+            });
+        }
+
         function addMarkerLayer(marker) {
             const activeMap = ensureMap(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
             const markerId = marker.id || nextMarkerId();
-            const markerLayer = L.marker([marker.lat, marker.lng]).addTo(activeMap);
+            const markerLayer = L.marker(
+                [marker.lat, marker.lng],
+                { icon: createMarkerIcon(marker) }
+            ).addTo(activeMap);
 
             if (marker.title) {
                 markerLayer.bindPopup(marker.title);
@@ -638,6 +661,7 @@
                 if (markerLayer) {
                     // Update position
                     markerLayer.setLatLng([marker.lat, marker.lng]);
+                    markerLayer.setIcon(createMarkerIcon(marker));
                     
                     // Update popup
                     if (marker.title) {

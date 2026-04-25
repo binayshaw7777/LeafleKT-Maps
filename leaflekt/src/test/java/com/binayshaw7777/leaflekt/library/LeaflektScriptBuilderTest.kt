@@ -48,6 +48,31 @@ class LeaflektScriptBuilderTest {
     }
 
     @Test
+    fun testAddMarkerScriptGenerationWithCustomIcon() {
+        val script = LeaflektScriptBuilder.addMarkersScript(
+            listOf(
+                LeaflektMarkerInfo(
+                    id = "current-location",
+                    lat = 22.5726,
+                    lng = 88.3639,
+                    icon = LeaflektMarkerIconInfo(
+                        dataUrl = "data:image/png;base64,abc123",
+                        widthPx = 32,
+                        heightPx = 32,
+                        anchorFractionX = 0.5f,
+                        anchorFractionY = 0.5f
+                    )
+                )
+            )
+        )
+
+        assertTrue(script.contains("\"icon\": {"))
+        assertTrue(script.contains("\"dataUrl\": \"data:image/png;base64,abc123\""))
+        assertTrue(script.contains("\"widthPx\": 32"))
+        assertTrue(script.contains("\"heightPx\": 32"))
+    }
+
+    @Test
     fun testAddPolylineScriptGeneration() {
         val script = LeaflektScriptBuilder.addPolylineScript(
             LeaflektPolylineInfo(
