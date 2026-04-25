@@ -33,7 +33,7 @@ Add the library:
 
 ```kotlin
 dependencies {
-    implementation("com.github.binayshaw7777.LeafleKT:leaflekt:0.4.0")
+    implementation("com.github.binayshaw7777.LeafleKT:leaflekt:0.5.0")
 }
 ```
 
