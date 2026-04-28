@@ -2,7 +2,8 @@
 
 LeafleKT is a Compose-first Android wrapper around Leaflet.js. It uses `WebView` plus a JavaScript bridge, but the public API is Kotlin-first and state-driven.
 
-<img src="https://github.com/user-attachments/assets/d9544533-7c4a-4653-9364-cfd631314368" style="max-width:100%; height:auto;" />
+<img src="https://github.com/user-attachments/assets/ac67880c-9258-4b8b-be38-10ffd0a3788c"
+     style="max-width:100%; height:auto;" />
 
 ## Status
 
